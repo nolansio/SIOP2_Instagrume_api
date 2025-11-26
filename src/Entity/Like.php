@@ -6,6 +6,7 @@ use App\Repository\LikeRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: LikeRepository::class)]
+#[ORM\Table(name: "`like`")]
 class Like
 {
     #[ORM\Id]
