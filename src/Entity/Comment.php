@@ -1,0 +1,183 @@
+<?php
+
+namespace App\Entity;
+
+use App\Repository\CommentRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: CommentRepository::class)]
+class Comment
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $content = null;
+
+    #[ORM\Column]
+    private ?\DateTimeImmutable $created_at = null;
+
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
+    private ?self $original_comment = null;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment')]
+    private Collection $comments;
+
+    /**
+     * @var Collection<int, Like>
+     */
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment')]
+    private Collection $likes;
+
+    /**
+     * @var Collection<int, Dislike>
+     */
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment')]
+    private Collection $dislikes;
+
+    public function __construct()
+    {
+        $this->comments = new ArrayCollection();
+        $this->likes = new ArrayCollection();
+        $this->dislikes = new ArrayCollection();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getContent(): ?string
+    {
+        return $this->content;
+    }
+
+    public function setContent(string $content): static
+    {
+        $this->content = $content;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->created_at;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $created_at): static
+    {
+        $this->created_at = $created_at;
+
+        return $this;
+    }
+
+    public function getOriginalComment(): ?self
+    {
+        return $this->original_comment;
+    }
+
+    public function setOriginalComment(?self $original_comment): static
+    {
+        $this->original_comment = $original_comment;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
+
+    public function addComment(self $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setOriginalComment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeComment(self $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            // set the owning side to null (unless already changed)
+            if ($comment->getOriginalComment() === $this) {
+                $comment->setOriginalComment(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Like>
+     */
+    public function getLikes(): Collection
+    {
+        return $this->likes;
+    }
+
+    public function addLike(Like $like): static
+    {
+        if (!$this->likes->contains($like)) {
+            $this->likes->add($like);
+            $like->setComment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLike(Like $like): static
+    {
+        if ($this->likes->removeElement($like)) {
+            // set the owning side to null (unless already changed)
+            if ($like->getComment() === $this) {
+                $like->setComment(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Dislike>
+     */
+    public function getDislikes(): Collection
+    {
+        return $this->dislikes;
+    }
+
+    public function addDislike(Dislike $dislike): static
+    {
+        if (!$this->dislikes->contains($dislike)) {
+            $this->dislikes->add($dislike);
+            $dislike->setComment($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDislike(Dislike $dislike): static
+    {
+        if ($this->dislikes->removeElement($dislike)) {
+            // set the owning side to null (unless already changed)
+            if ($dislike->getComment() === $this) {
+                $dislike->setComment(null);
+            }
+        }
+
+        return $this;
+    }
+}

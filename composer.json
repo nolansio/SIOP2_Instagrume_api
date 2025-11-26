@@ -10,11 +10,14 @@
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.5",
+        "firebase/php-jwt": "^6.11",
         "symfony/console": "7.3.*",
         "symfony/dotenv": "7.3.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.3.*",
+        "symfony/password-hasher": "7.3.*",
         "symfony/runtime": "7.3.*",
+        "symfony/security-bundle": "7.3.*",
         "symfony/yaml": "7.3.*"
     },
     "config": {
