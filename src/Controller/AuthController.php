@@ -7,7 +7,6 @@ use App\Service\JWTService;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
@@ -41,6 +40,15 @@ class AuthController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Bad request')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 401,
                 description: 'Identifiants invalides',
                 content: new OA\JsonContent(
@@ -48,26 +56,14 @@ class AuthController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
                     ]
                 )
-            ),
-            new OA\Response(
-                response: 500,
-                description: 'Erreur interne du serveur',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Internal Server Error')
-                    ]
-                )
             )
         ]
     )]
-    public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher): JsonResponse {
+    public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $entityManager = $doctrine->getManager();
         $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
 
-        if (!$user || !$passwordHasher->isPasswordValid($user, $data['password'])) {
-            return new JsonResponse(['error' => 'Invalid credentials'], 401);
-        }
         $jwt = $jwtService->encodeToken([
             'username' => $user->getUsername(),
             'roles' => $user->getRoles(),
