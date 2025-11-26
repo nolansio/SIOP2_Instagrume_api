@@ -43,6 +43,10 @@ class Comment
     #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment')]
     private Collection $dislikes;
 
+    #[ORM\ManyToOne(inversedBy: 'comments')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Post $post = null;
+
     public function __construct()
     {
         $this->comments = new ArrayCollection();
@@ -177,6 +181,18 @@ class Comment
                 $dislike->setComment(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPost(): ?Post
+    {
+        return $this->post;
+    }
+
+    public function setPost(?Post $post): static
+    {
+        $this->post = $post;
 
         return $this;
     }
