@@ -41,20 +41,20 @@ class AuthController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Bad request')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 401,
                 description: 'Identifiants invalides',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 500,
-                description: 'Erreur interne du serveur',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Internal Server Error')
                     ]
                 )
             )
