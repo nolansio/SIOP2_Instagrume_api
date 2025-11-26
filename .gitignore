@@ -10,4 +10,10 @@
 ###< symfony/framework-bundle ###
 .env.dev
 .env.test
-.end.local
+.env.local
+/env.dev
+/env.test
+/env.local
+/.env.dev
+/.env.test
+/.env.local
