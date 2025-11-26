@@ -65,9 +65,6 @@ class AuthController extends AbstractController {
         $entityManager = $doctrine->getManager();
         $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
 
-        if (!$user || !$passwordHasher->isPasswordValid($user, $data['password'])) {
-            return new JsonResponse(['error' => 'Invalid credentials'], 401);
-        }
         $jwt = $jwtService->encodeToken([
             'username' => $user->getUsername(),
             'roles' => $user->getRoles(),
