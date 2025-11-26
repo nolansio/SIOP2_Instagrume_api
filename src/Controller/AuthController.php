@@ -10,10 +10,56 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use OpenApi\Attributes as OA;
 
 class AuthController extends AbstractController {
 
     #[Route('/api/token', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/token',
+        summary: 'Génère un token',
+        description: 'Authentifie un utilisateur et renvoie un token',
+        tags: ['Authentification'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username', 'password'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'user'),
+                    new OA\Property(property: 'password', type: 'string', example: 'user')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Token généré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Identifiants invalides',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Erreur interne du serveur',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Internal Server Error')
+                    ]
+                )
+            )
+        ]
+    )]
     public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $entityManager = $doctrine->getManager();
