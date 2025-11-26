@@ -21,10 +21,14 @@ class JWTAuthenticator extends AbstractAuthenticator {
     }
 
     public function supports(Request $request): ?bool {
-        return $request->headers->has('Authorization');
+        return str_starts_with($request->getPathInfo(), '/api');
     }
 
     public function authenticate(Request $request): Passport {
+        if (!$request->headers->has('Authorization')) {
+            throw new AuthenticationException('Missing token');
+        }
+
         $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
         try {
             $payload = $this->jwtManager->decodeToken($token);
@@ -42,7 +46,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?JsonResponse {
-        return new JsonResponse(['error' => 'Unauthorized'], 401);
+        return new JsonResponse(['error' => $exception->getMessage()], 401);
     }
 
 }
