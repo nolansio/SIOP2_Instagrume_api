@@ -25,29 +25,30 @@ class Post
     /**
      * @var Collection<int, Image>
      */
-    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication')]
+    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication', orphanRemoval: true)]
     private Collection $images;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'post')]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'post')]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $dislikes;
 
     #[ORM\ManyToOne(inversedBy: 'posts')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
     /**
      * @var Collection<int, Comment>
      */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'post')]
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $comments;
 
     public function __construct()

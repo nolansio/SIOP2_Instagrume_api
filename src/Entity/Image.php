@@ -21,6 +21,7 @@ class Image
     private ?string $url = null;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?Post $publication = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]

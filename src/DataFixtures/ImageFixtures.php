@@ -1,0 +1,82 @@
+<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\Image;
+use App\Entity\Post;
+use App\Repository\UserRepository;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
+use Doctrine\Persistence\ObjectManager;
+
+class ImageFixtures extends Fixture implements DependentFixtureInterface {
+
+    private UserRepository $userRepository;
+
+    public function __construct(UserRepository $userRepository) {
+        $this->userRepository = $userRepository;
+    }
+
+    public function load(ObjectManager $manager): void {
+        $userRepository = $this->userRepository;
+
+        // Publication 1
+        $image1 = new Image();
+        $image1->setDescription("Carottes");
+        $image1->setUrl("/images/upload1.png");
+        $image1->setPost($this->getReference('post1', Post::class));
+        $manager->persist($image1);
+
+        $image2 = new Image();
+        $image2->setDescription("Choux");
+        $image2->setUrl("/images/upload2.jpg");
+        $image2->setPost($this->getReference('post1', Post::class));
+        $manager->persist($image2);
+
+        $image3 = new Image();
+        $image3->setDescription("Patates");
+        $image3->setUrl("/images/upload3.webp");
+        $image3->setPost($this->getReference('post1', Post::class));
+        $manager->persist($image3);
+
+        // Publication 2
+        $image4 = new Image();
+        $image4->setDescription("Saumon grillé aux légumes");
+        $image4->setUrl("/images/upload4.png");
+        $image4->setPost($this->getReference('post2', Post::class));
+        $manager->persist($image4);
+
+        // Publication 3
+        $image5 = new Image();
+        $image5->setDescription("Cerise 1");
+        $image5->setUrl("/images/upload5.jpg");
+        $image5->setPost($this->getReference('post3', Post::class));
+        $manager->persist($image5);
+
+        $image6 = new Image();
+        $image6->setDescription("Cerise 2");
+        $image6->setUrl("/images/upload6.jpg");
+        $image6->setPost($this->getReference('post3', Post::class));
+        $manager->persist($image6);
+
+        // Avatars
+        $image7 = new Image();
+        $image7->setDescription("albert");
+        $image7->setUrl("/images/upload7.jpg");
+        $image7->setUser($userRepository->findOneByUsername("albert"));
+        $manager->persist($image7);
+
+        $image8 = new Image();
+        $image8->setDescription("elon");
+        $image8->setUrl("/images/upload8.jpg");
+        $image8->setUser($userRepository->findOneByUsername("elon"));
+        $manager->persist($image8);
+
+        $manager->flush();
+    }
+
+    public function getDependencies(): array {
+        return [PostFixtures::class];
+    }
+
+}
