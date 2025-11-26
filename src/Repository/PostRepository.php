@@ -9,35 +9,43 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Post>
  */
-class PostRepository extends ServiceEntityRepository
-{
-    public function __construct(ManagerRegistry $registry)
-    {
+class PostRepository extends ServiceEntityRepository {
+
+    private UserRepository $userRepository;
+
+    public function __construct(ManagerRegistry $registry, UserRepository $userRepository) {
         parent::__construct($registry, Post::class);
+        $this->userRepository = $userRepository;
     }
 
-    //    /**
-    //     * @return Post[] Returns an array of Post objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findOneById($id): ?Post {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
 
-    //    public function findOneBySomeField($value): ?Post
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findMostRecentByPartDescription($description): ?Post {
+        return $this->createQueryBuilder('p')
+            ->andWhere('LOWER(p.description) LIKE LOWER(:description)')
+            ->orderBy('p.created_at', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('description', '%'.$description.'%')
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
+    public function findAllByPartDescription($description): array {
+        return $this->createQueryBuilder('p')
+            ->andWhere('LOWER(p.description) LIKE LOWER(:description)')
+            ->orderBy('p.created_at', 'DESC')
+            ->setParameter('description', '%'. $description .'%')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
 }

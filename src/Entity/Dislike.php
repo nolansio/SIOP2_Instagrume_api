@@ -14,13 +14,16 @@ class Dislike
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?Post $post = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?Comment $comment = null;
 
     public function getId(): ?int

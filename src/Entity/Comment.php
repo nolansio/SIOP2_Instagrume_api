@@ -23,25 +23,36 @@ class Comment
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?self $original_comment = null;
 
     /**
      * @var Collection<int, self>
      */
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment')]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true)]
     private Collection $comments;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment')]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true)]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment')]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true)]
     private Collection $dislikes;
+
+    #[ORM\ManyToOne(inversedBy: 'comments')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Post $post = null;
+
+    #[ORM\ManyToOne(inversedBy: 'comments')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $user = null;
 
     public function __construct()
     {
@@ -87,6 +98,7 @@ class Comment
     public function setOriginalComment(?self $original_comment): static
     {
         $this->original_comment = $original_comment;
+        $this->setPost($original_comment->getPost());
 
         return $this;
     }
@@ -104,6 +116,7 @@ class Comment
         if (!$this->comments->contains($comment)) {
             $this->comments->add($comment);
             $comment->setOriginalComment($this);
+            $comment->setPost($this->getPost());
         }
 
         return $this;
@@ -177,6 +190,30 @@ class Comment
                 $dislike->setComment(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPost(): ?Post
+    {
+        return $this->post;
+    }
+
+    public function setPost(?Post $post): static
+    {
+        $this->post = $post;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }
