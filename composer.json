@@ -12,6 +12,8 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.5",
         "firebase/php-jwt": "^6.11",
+        "nelmio/api-doc-bundle": "^5.8",
+        "symfony/asset": "7.3.*",
         "symfony/console": "7.3.*",
         "symfony/dotenv": "7.3.*",
         "symfony/flex": "^2",
@@ -19,6 +21,7 @@
         "symfony/password-hasher": "7.3.*",
         "symfony/runtime": "7.3.*",
         "symfony/security-bundle": "7.3.*",
+        "symfony/twig-bundle": "7.3.*",
         "symfony/yaml": "7.3.*"
     },
     "config": {
