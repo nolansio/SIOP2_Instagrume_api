@@ -13,31 +13,25 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        main:
-            lazy: true
-            provider: app_user_provider
+
+        public_api:
+            pattern: ^/api/doc
+            security: false
         login:
             pattern: ^/api/token
             stateless: true
             json_login:
                 check_path: /api/token
-        public_api:
-            pattern: ^/api/doc
-            security: false
         api:
             pattern: ^/api
             stateless: true
             custom_authenticators:
                 - App\Security\JWTAuthenticator
 
-            # activate different ways to authenticate
-            # https://symfony.com/doc/current/security.html#the-firewall
+        main:
+            lazy: true
+            provider: app_user_provider
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Easy way to control access for large sections of your site
-    # Note: Only the *first* access control that matches will be used
     access_control:
         - { path: ^/api/token, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
