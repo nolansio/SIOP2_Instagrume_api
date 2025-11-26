@@ -99,7 +99,7 @@ class Post
     {
         if (!$this->images->contains($image)) {
             $this->images->add($image);
-            $image->setPublication($this);
+            $image->setPost($this);
         }
 
         return $this;
@@ -109,8 +109,8 @@ class Post
     {
         if ($this->images->removeElement($image)) {
             // set the owning side to null (unless already changed)
-            if ($image->getPublication() === $this) {
-                $image->setPublication(null);
+            if ($image->getPost() === $this) {
+                $image->setPost(null);
             }
         }
 

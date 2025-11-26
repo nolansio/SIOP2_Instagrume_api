@@ -55,12 +55,12 @@ class Image
         return $this;
     }
 
-    public function getPublication(): ?Post
+    public function getPost(): ?Post
     {
         return $this->publication;
     }
 
-    public function setPublication(?Post $publication): static
+    public function setPost(?Post $publication): static
     {
         $this->publication = $publication;
 

@@ -112,6 +112,7 @@ class Comment
         if (!$this->comments->contains($comment)) {
             $this->comments->add($comment);
             $comment->setOriginalComment($this);
+            $comment->setPost($this->getPost());
         }
 
         return $this;
