@@ -38,7 +38,8 @@ class JWTAuthenticator extends AbstractAuthenticator {
     }
 
     public function onAuthenticationSuccess(Request $request, $token, string $firewallName): ?JsonResponse {
-        return null; }
+        return null;
+    }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?JsonResponse {
         return new JsonResponse(['error' => 'Unauthorized'], 401);
