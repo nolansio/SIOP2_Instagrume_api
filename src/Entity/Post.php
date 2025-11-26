@@ -40,6 +40,10 @@ class Post
     #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'post')]
     private Collection $dislikes;
 
+    #[ORM\ManyToOne(inversedBy: 'posts')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $user = null;
+
     public function __construct()
     {
         $this->images = new ArrayCollection();
@@ -162,6 +166,18 @@ class Post
                 $dislike->setPost(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }
