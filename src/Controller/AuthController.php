@@ -7,7 +7,6 @@ use App\Service\JWTService;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
@@ -60,7 +59,7 @@ class AuthController extends AbstractController {
             )
         ]
     )]
-    public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher): JsonResponse {
+    public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $entityManager = $doctrine->getManager();
         $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
