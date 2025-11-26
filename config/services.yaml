@@ -23,5 +23,9 @@ services:
             $privateKeyPath: '%jwt_private_key_path%'
             $publicKeyPath: '%jwt_public_key_path%'
 
+    App\EventListener\ApiExceptionListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception }
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
