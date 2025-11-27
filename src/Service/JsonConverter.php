@@ -33,4 +33,5 @@ class JsonConverter {
 
         return $object;
     }
+
 }
