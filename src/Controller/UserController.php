@@ -76,6 +76,15 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
             )
         ]
     )]
@@ -91,17 +100,92 @@ class UserController extends AbstractController {
         if (!$id && !$username) {
             $data = $this->userRepository->findAll();
         }
-        elseif ($id && !$username) {
+
+        if ($id && !$username) {
             $data = $this->userRepository->find($id);
         }
-        elseif (!$id && $username) {
+
+        if (!$id && $username) {
             $data = $this->userRepository->findOneByUsername($username);
         }
-        elseif (!$data) {
+
+        if (!$data) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
         return new JsonResponse($this->jsonConverter->encodeToJson($data), 200, [], true);
+    }
+
+    #[Route('/api/users', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/users',
+        summary: "Créé un utilisateur",
+        description: "Création d'un utilisateur",
+        tags: ['Utilisateur'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['username', 'password'],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string', example: 'toto'),
+                    new OA\Property(property: 'password', type: 'string', example: 'P@ssw0rd')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Utilisateur créé avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'user_identifier', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function insert(Request $request): Response {
+        $data = json_decode($request->getContent(), true);
+        $username = $data['username'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$username || !$password) {
+            return new JsonResponse(['error' => "Parameters 'username' and 'password' required"], 400);
+        }
+
+        if ($this->userRepository->findOneByUsername($username)) {
+            return new JsonResponse(['error' => "Username already exists"], 409);
+        }
+
+        $data = $this->userRepository->create($username, $password);
+
+        return new JsonResponse($this->jsonConverter->encodeToJson($data), 201, [], true);
     }
 
 }
