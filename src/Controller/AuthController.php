@@ -44,7 +44,7 @@ class AuthController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Bad request')
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
                     ]
                 )
             ),
@@ -61,6 +61,14 @@ class AuthController extends AbstractController {
     )]
     public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine): JsonResponse {
         $data = json_decode($request->getContent(), true);
+
+        $username = $data['username'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$username || !$password) {
+            return new JsonResponse(['error' => "Parameters 'username' and 'password' required"], 400);
+        }
+
         $entityManager = $doctrine->getManager();
         $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
 
@@ -68,7 +76,7 @@ class AuthController extends AbstractController {
             'username' => $user->getUsername(),
             'roles' => $user->getRoles(),
         ]);
-        return new JsonResponse(['token' => $jwt]);
+        return new JsonResponse(['token' => $jwt], 200);
     }
 
 }

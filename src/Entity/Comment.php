@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 class Comment
@@ -14,44 +15,53 @@ class Comment
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['public'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['public'])]
     private ?string $content = null;
 
     #[ORM\Column]
+    #[Groups(['public'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[Groups(['public'])]
     private ?self $original_comment = null;
 
     /**
      * @var Collection<int, self>
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true)]
+    #[Groups(['public'])]
     private Collection $comments;
 
     /**
      * @var Collection<int, Like>
      */
     #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true)]
+    #[Groups(['public'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
     #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true)]
+    #[Groups(['public'])]
     private Collection $dislikes;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['public'])]
     private ?Post $post = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['public'])]
     private ?User $user = null;
 
     public function __construct()

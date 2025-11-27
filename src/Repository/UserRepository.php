@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
@@ -13,8 +14,14 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
  * @extends ServiceEntityRepository<User>
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface {
-    public function __construct(ManagerRegistry $registry) {
-        parent::__construct($registry, User::class);
+
+    private ManagerRegistry $doctrine;
+    private UserPasswordHasherInterface $passwordHasher;
+
+    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher) {
+        parent::__construct($doctrine, User::class);
+        $this->doctrine = $doctrine;
+        $this->passwordHasher = $passwordHasher;
     }
 
     /**
@@ -38,5 +45,35 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getOneOrNullResult()
         ;
     }
+
+    public function create($username, $password): User {
+        $user = new User();
+        $user->setUsername($username);
+
+        $hashed = $this->passwordHasher->hashPassword($user, $password);
+        $user->setPassword($hashed);
+
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $user;
+    }
+
+    public function update($username, $password, $user): User {
+        $user->setUsername($username);
+
+        $hashed = $this->passwordHasher->hashPassword($user, $password);
+        $user->setPassword($hashed);
+
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $user;
+    }
+
 
 }
