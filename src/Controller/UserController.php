@@ -49,13 +49,8 @@ class UserController extends AbstractController {
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
-                        new OA\Property(property: 'user_identifier', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
-                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -98,22 +93,25 @@ class UserController extends AbstractController {
         }
 
         if (!$id && !$username) {
-            $data = $this->userRepository->findAll();
+            $users = $this->userRepository->findAll();
+            $data = $this->jsonConverter->encodeToJson($users, ['public']);
         }
 
-        if ($id && !$username) {
-            $data = $this->userRepository->find($id);
+        if ($id) {
+            $user = $this->userRepository->find($id);
+            $data = $this->jsonConverter->encodeToJson($user, ['public']);
         }
 
-        if (!$id && $username) {
-            $data = $this->userRepository->findOneByUsername($username);
+        if ($username) {
+            $user = $this->userRepository->findOneByUsername($username);
+            $data = $this->jsonConverter->encodeToJson($user, ['public']);
         }
 
         if (!$data) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        return new JsonResponse($this->jsonConverter->encodeToJson($data), 200, [], true);
+        return new JsonResponse($data, 200, [], true);
     }
 
     #[Route('/api/users', methods: ['POST'])]
@@ -185,7 +183,7 @@ class UserController extends AbstractController {
 
         $data = $this->userRepository->create($username, $password);
 
-        return new JsonResponse($this->jsonConverter->encodeToJson($data), 201, [], true);
+        return new JsonResponse($this->jsonConverter->encodeToJson($data, ['public']), 201, [], true);
     }
 
     #[Route('/api/users', methods: ['PUT'])]
@@ -283,7 +281,7 @@ class UserController extends AbstractController {
 
         $data = $this->userRepository->update($username, $password, $user);
 
-        return new JsonResponse($this->jsonConverter->encodeToJson($data), 201, [], true);
+        return new JsonResponse($this->jsonConverter->encodeToJson($data, ['public']), 201, [], true);
     }
 
 }

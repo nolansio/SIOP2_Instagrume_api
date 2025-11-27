@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ImageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ImageRepository::class)]
 class Image
@@ -12,19 +13,24 @@ class Image
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['public'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['public'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['public'])]
     private ?string $url = null;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    private ?Post $publication = null;
+    #[Groups(['public'])]
+    private ?Post $post = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['public'])]
     private ?User $User = null;
 
     public function getId(): ?int
@@ -58,12 +64,12 @@ class Image
 
     public function getPost(): ?Post
     {
-        return $this->publication;
+        return $this->post;
     }
 
-    public function setPost(?Post $publication): static
+    public function setPost(?Post $post): static
     {
-        $this->publication = $publication;
+        $this->post = $post;
 
         return $this;
     }
