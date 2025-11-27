@@ -181,9 +181,10 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => "Username already exists"], 409);
         }
 
-        $data = $this->userRepository->create($username, $password);
+        $user = $this->userRepository->create($username, $password);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
 
-        return new JsonResponse($this->jsonConverter->encodeToJson($data, ['public']), 201, [], true);
+        return new JsonResponse($data, 201, [], true);
     }
 
     #[Route('/api/users', methods: ['PUT'])]
@@ -198,22 +199,20 @@ class UserController extends AbstractController {
                 required: ['id', 'username', 'password'],
                 properties: [
                     new OA\Property(property: 'id', type: 'integer', example: 1),
-                    new OA\Property(property: 'username', type: 'string', example: "albert"),
-                    new OA\Property(property: 'password', type: 'string', example: 'P@ssw0rd')
+                    new OA\Property(property: 'username', type: 'string', example: "user"),
+                    new OA\Property(property: 'password', type: 'string', example: 'password')
                 ]
             )
         ),
         responses: [
             new OA\Response(
-                response: 201,
+                response: 200,
                 description: 'Utilisateur modifié avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'albert'),
-                        new OA\Property(property: 'user_identifier', type: 'string', example: 'P@ssw0rd'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
@@ -279,9 +278,10 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => "Username already exists"], 409);
         }
 
-        $data = $this->userRepository->update($username, $password, $user);
+        $user = $this->userRepository->update($username, $password, $user);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
 
-        return new JsonResponse($this->jsonConverter->encodeToJson($data, ['public']), 201, [], true);
+        return new JsonResponse($data, 200, [], true);
     }
 
 }
