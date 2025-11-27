@@ -61,5 +61,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $user;
     }
 
+    public function update($username, $password, $user): User {
+        $user->setUsername($username);
+
+        $hashed = $this->passwordHasher->hashPassword($user, $password);
+        $user->setPassword($hashed);
+
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        return $user;
+    }
+
 
 }

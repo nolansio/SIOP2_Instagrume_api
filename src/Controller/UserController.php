@@ -138,9 +138,9 @@ class UserController extends AbstractController {
                 description: 'Utilisateur créé avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'username', type: 'string', example: 'user'),
-                        new OA\Property(property: 'user_identifier', type: 'string', example: 'user'),
+                        new OA\Property(property: 'id', type: 'integer', example: 6),
+                        new OA\Property(property: 'username', type: 'string', example: 'toto'),
+                        new OA\Property(property: 'user_identifier', type: 'string', example: 'P@ssw0rd'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
@@ -184,6 +184,96 @@ class UserController extends AbstractController {
         }
 
         $data = $this->userRepository->create($username, $password);
+
+        return new JsonResponse($this->jsonConverter->encodeToJson($data), 201, [], true);
+    }
+
+    #[Route('/api/users', methods: ['PUT'])]
+    #[OA\Put(
+        path: '/api/users',
+        summary: "Mettre à jour un utilisateur",
+        description: "Mise à jour d'un utilisateur",
+        tags: ['Utilisateur'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['id', 'username', 'password'],
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer', example: 1),
+                    new OA\Property(property: 'username', type: 'string', example: "albert"),
+                    new OA\Property(property: 'password', type: 'string', example: 'P@ssw0rd')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Utilisateur modifié avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'albert'),
+                        new OA\Property(property: 'user_identifier', type: 'string', example: 'P@ssw0rd'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id', 'username' and 'password' required")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function update(Request $request): Response {
+        $data = json_decode($request->getContent(), true);
+
+        $id = $data['id'] ?? null;
+        $username = $data['username'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$id || !$username || !$password) {
+            return new JsonResponse(['error' => "Parameters 'id', 'username' and 'password' required"], 400);
+        }
+
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return new JsonResponse(['error' => "User not found"], 404);
+        }
+
+        $user2 = $this->userRepository->findOneByUsername($username);
+        if ($user2 && $user->getId() != $user2->getId()) {
+            return new JsonResponse(['error' => "Username already exists"], 409);
+        }
+
+        $data = $this->userRepository->update($username, $password, $user);
 
         return new JsonResponse($this->jsonConverter->encodeToJson($data), 201, [], true);
     }
