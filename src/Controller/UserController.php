@@ -268,6 +268,14 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => "User not found"], 404);
         }
 
+        $currentUser = $this->getUser();
+        $sameUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$sameUser && !$isAdmin) {
+            return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
+        }
+
         $user2 = $this->userRepository->findOneByUsername($username);
         if ($user2 && $user->getId() != $user2->getId()) {
             return new JsonResponse(['error' => "Username already exists"], 409);
