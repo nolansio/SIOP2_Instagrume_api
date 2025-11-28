@@ -24,8 +24,8 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users',
-        summary: "Récupère tous les utilisateurs ou un utilisateur par son ID ou nom d'utilisateur",
-        description: "Récupération de tous les utilisateurs ou un utilisateur par son par son ID ou nom d'utilisateur",
+        summary: "Récupère un ou un groupe d'utilisateur",
+        description: "Récupération d'un ou un groupe d'utilisateur",
         tags: ['Utilisateur'],
         parameters: [
             new OA\Parameter(
@@ -36,6 +36,12 @@ class UserController extends AbstractController {
             ),
             new OA\Parameter(
                 name: "username",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "search",
                 in: "query",
                 required: false,
                 schema: new OA\Schema(type: "string")
@@ -86,13 +92,15 @@ class UserController extends AbstractController {
     public function get(Request $request): Response {
         $id = $request->query->get('id');
         $username = $request->query->get('username');
+        $search = $request->query->get('search');
         $data = null;
 
-        if ($id && $username) {
-            return new JsonResponse(['error' => "Can't use 2 parameters. Only 1 or 0 is allowed"], 400);
+        $params = array_filter(['id' => $id, 'username' => $username, 'search' => $search]);
+        if (count($params) > 1) {
+            return new JsonResponse(['error' => "Only one parameter ('id', 'username' or 'search') is allowed"], 400);
         }
 
-        if (!$id && !$username) {
+        if (!$id && !$username && !$search) {
             $users = $this->userRepository->findAll();
             $data = $this->jsonConverter->encodeToJson($users, ['public']);
         }
@@ -105,6 +113,11 @@ class UserController extends AbstractController {
         if ($username) {
             $user = $this->userRepository->findOneByUsername($username);
             $data = $this->jsonConverter->encodeToJson($user, ['public']);
+        }
+
+        if ($search) {
+            $users = $this->userRepository->findManyByUsername($search);
+            $data = $this->jsonConverter->encodeToJson($users, ['public']);
         }
 
         if (!$data) {
@@ -182,7 +195,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin', 'private']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -196,7 +209,7 @@ class UserController extends AbstractController {
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['id', 'username', 'password'],
+                required: ['id'],
                 properties: [
                     new OA\Property(property: 'id', type: 'integer', example: 1),
                     new OA\Property(property: 'username', type: 'string', example: "user"),
@@ -266,10 +279,10 @@ class UserController extends AbstractController {
         }
 
         $currentUser = $this->getUser();
-        $sameUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
         $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
 
-        if (!$sameUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isAdmin) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
@@ -282,6 +295,63 @@ class UserController extends AbstractController {
         $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
 
         return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/users/{id}',
+        summary: "Supprimer un utilisateur",
+        description: "Suppression d'un utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur supprimé avec succès',
+                content: new OA\JsonContent(
+                    properties: []
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function delete($id): Response {
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+        }
+
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return new JsonResponse(['error' => "User not found"], 404);
+        }
+
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$isCurrentUser && !$isAdmin) {
+            return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
+        }
+
+        $this->userRepository->delete($user);
+
+        return new JsonResponse([], 200);
     }
 
 }

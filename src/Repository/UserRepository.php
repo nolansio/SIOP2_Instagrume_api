@@ -46,6 +46,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         ;
     }
 
+    public function findManyByUsername($username): array {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.username LIKE :username')
+            ->setParameter('username', '%'.$username.'%')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
     public function create($username, $password): User {
         $user = new User();
         $user->setUsername($username);
@@ -66,6 +75,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         $hashed = $this->passwordHasher->hashPassword($user, $password);
         $user->setPassword($hashed);
+        // $this->upgradePassword($user, $password);
 
         $entityManager = $this->doctrine->getManager();
 
@@ -73,6 +83,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $entityManager->flush();
 
         return $user;
+    }
+
+    public function delete($user): void{
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->remove($user);
+        $entityManager->flush();
     }
 
 

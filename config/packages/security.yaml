@@ -35,7 +35,9 @@ security:
     access_control:
         - { path: ^/api/token, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users, roles: ROLE_USER, methods: [PUT, DELETE] }
+        - { path: ^/api/users, roles: PUBLIC_ACCESS, methods: [GET, POST] }
+        - { path: ^/api, roles: ROLE_USER }
 
 when@test:
     security:
