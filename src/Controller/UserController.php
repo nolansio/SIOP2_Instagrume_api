@@ -195,7 +195,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin', 'private']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -209,7 +209,7 @@ class UserController extends AbstractController {
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['id', 'username', 'password'],
+                required: ['id'],
                 properties: [
                     new OA\Property(property: 'id', type: 'integer', example: 1),
                     new OA\Property(property: 'username', type: 'string', example: "user"),
@@ -279,10 +279,10 @@ class UserController extends AbstractController {
         }
 
         $currentUser = $this->getUser();
-        $sameUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
         $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
 
-        if (!$sameUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isAdmin) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
