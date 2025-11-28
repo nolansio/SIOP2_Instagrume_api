@@ -297,4 +297,61 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
+    #[Route('/api/users/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/users/{id}',
+        summary: "Supprimer un utilisateur",
+        description: "Suppression d'un utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur supprimé avec succès',
+                content: new OA\JsonContent(
+                    properties: []
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function delete($id): Response {
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+        }
+
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return new JsonResponse(['error' => "User not found"], 404);
+        }
+
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$isCurrentUser && !$isAdmin) {
+            return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
+        }
+
+        $this->userRepository->delete($user);
+
+        return new JsonResponse([], 200);
+    }
+
 }
