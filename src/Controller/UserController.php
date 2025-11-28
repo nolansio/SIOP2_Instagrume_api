@@ -24,8 +24,8 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users',
-        summary: "Récupère tous les utilisateurs ou un utilisateur par son ID ou nom d'utilisateur",
-        description: "Récupération de tous les utilisateurs ou un utilisateur par son par son ID ou nom d'utilisateur",
+        summary: "Récupère un ou un groupe d'utilisateur",
+        description: "Récupération d'un ou un groupe d'utilisateur",
         tags: ['Utilisateur'],
         parameters: [
             new OA\Parameter(
@@ -36,6 +36,12 @@ class UserController extends AbstractController {
             ),
             new OA\Parameter(
                 name: "username",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "search",
                 in: "query",
                 required: false,
                 schema: new OA\Schema(type: "string")
@@ -86,13 +92,15 @@ class UserController extends AbstractController {
     public function get(Request $request): Response {
         $id = $request->query->get('id');
         $username = $request->query->get('username');
+        $search = $request->query->get('search');
         $data = null;
 
-        if ($id && $username) {
-            return new JsonResponse(['error' => "Can't use 2 parameters. Only 1 or 0 is allowed"], 400);
+        $params = array_filter(['id' => $id, 'username' => $username, 'search' => $search]);
+        if (count($params) > 1) {
+            return new JsonResponse(['error' => "Only one parameter ('id', 'username' or 'search') is allowed"], 400);
         }
 
-        if (!$id && !$username) {
+        if (!$id && !$username && !$search) {
             $users = $this->userRepository->findAll();
             $data = $this->jsonConverter->encodeToJson($users, ['public']);
         }
@@ -105,6 +113,11 @@ class UserController extends AbstractController {
         if ($username) {
             $user = $this->userRepository->findOneByUsername($username);
             $data = $this->jsonConverter->encodeToJson($user, ['public']);
+        }
+
+        if ($search) {
+            $users = $this->userRepository->findManyByUsername($search);
+            $data = $this->jsonConverter->encodeToJson($users, ['public']);
         }
 
         if (!$data) {

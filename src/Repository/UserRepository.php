@@ -46,6 +46,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         ;
     }
 
+    public function findManyByUsername($username): array {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.username LIKE :username')
+            ->setParameter('username', '%'.$username.'%')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
     public function create($username, $password): User {
         $user = new User();
         $user->setUsername($username);
