@@ -195,7 +195,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -292,7 +292,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->update($username, $password, $user);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
 
         return new JsonResponse($data, 200, [], true);
     }

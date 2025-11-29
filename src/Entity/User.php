@@ -35,21 +35,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var ?string The hashed password
      */
     #[ORM\Column]
-    #[Groups(['private'])]
     private ?string $password = null;
 
     /**
      * @var Collection<int, Like>
      */
     #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['admin', 'private'])]
+    #[Groups(['private'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
     #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['admin', 'private'])]
+    #[Groups(['private'])]
     private Collection $dislikes;
 
     /**
@@ -63,7 +62,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var Collection<int, Comment>
      */
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['admin', 'private'])]
+    #[Groups(['private'])]
     private Collection $comments;
 
     public function __construct()

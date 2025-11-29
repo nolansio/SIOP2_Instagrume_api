@@ -18,7 +18,7 @@ class Dislike
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['public'])]
+    #[Groups(['private'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
