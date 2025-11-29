@@ -139,7 +139,7 @@ class UserController extends AbstractController {
                 required: ['username', 'password'],
                 properties: [
                     new OA\Property(property: 'username', type: 'string', example: 'toto'),
-                    new OA\Property(property: 'password', type: 'string', example: 'P@ssw0rd')
+                    new OA\Property(property: 'password', type: 'string', example: 'password')
                 ]
             )
         ),
@@ -151,9 +151,7 @@ class UserController extends AbstractController {
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 6),
                         new OA\Property(property: 'username', type: 'string', example: 'toto'),
-                        new OA\Property(property: 'user_identifier', type: 'string', example: 'P@ssw0rd'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'password', type: 'string', example: '$2y$13$IZVb2Y5dGZmk...'),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
@@ -195,7 +193,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -224,7 +222,7 @@ class UserController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'username', type: 'string', example: 'albert'),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
@@ -292,7 +290,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->update($username, $password, $user);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'admin']);
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -352,6 +350,55 @@ class UserController extends AbstractController {
         $this->userRepository->delete($user);
 
         return new JsonResponse([], 200);
+    }
+
+    #[Route('/api/myself', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/myself',
+        summary: "Récupère son utilisateur",
+        description: "Récupération de son utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Can't use 2 parameters. Only 1 or 0 is allowed")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function myself(): Response {
+        $user = $this->getUser();
+        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+
+        return new JsonResponse($data, 200, [], true);
     }
 
 }
