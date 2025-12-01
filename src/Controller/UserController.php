@@ -99,6 +99,11 @@ class UserController extends AbstractController {
     )]
     public function getById($id): Response {
         $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
         $data = $this->jsonConverter->encodeToJson($user, ['public']);
 
         return new JsonResponse($data, 200, [], true);
@@ -145,6 +150,11 @@ class UserController extends AbstractController {
     )]
     public function getByUsername($username): Response {
         $user = $this->userRepository->findOneByUsername($username);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
         $data = $this->jsonConverter->encodeToJson($user, ['public']);
 
         return new JsonResponse($data, 200, [], true);
