@@ -2,15 +2,15 @@
 
 namespace App\Entity;
 
-use App\Repository\PostRepository;
+use App\Repository\PublicationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ORM\Entity(repositoryClass: PostRepository::class)]
-class Post
+#[ORM\Entity(repositoryClass: PublicationRepository::class)]
+class Publication
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -29,34 +29,33 @@ class Post
     /**
      * @var Collection<int, Image>
      */
-    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'post', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication', orphanRemoval: true)]
     #[Groups(['public'])]
     private Collection $images;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'post', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'publication', orphanRemoval: true)]
     #[Groups(['public'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'post', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'publication', orphanRemoval: true)]
     #[Groups(['public'])]
     private Collection $dislikes;
 
-    #[ORM\ManyToOne(inversedBy: 'posts')]
-    #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(inversedBy: 'publications')]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: false)]
     #[Groups(['public'])]
     private ?User $user = null;
 
     /**
      * @var Collection<int, Comment>
      */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'post', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'publication', orphanRemoval: true)]
     #[Groups(['public'])]
     private Collection $comments;
 
@@ -109,7 +108,7 @@ class Post
     {
         if (!$this->images->contains($image)) {
             $this->images->add($image);
-            $image->setPost($this);
+            $image->setPublication($this);
         }
 
         return $this;
@@ -119,8 +118,8 @@ class Post
     {
         if ($this->images->removeElement($image)) {
             // set the owning side to null (unless already changed)
-            if ($image->getPost() === $this) {
-                $image->setPost(null);
+            if ($image->getPublication() === $this) {
+                $image->setPublication(null);
             }
         }
 
@@ -139,7 +138,7 @@ class Post
     {
         if (!$this->likes->contains($like)) {
             $this->likes->add($like);
-            $like->setPost($this);
+            $like->setPublication($this);
         }
 
         return $this;
@@ -149,8 +148,8 @@ class Post
     {
         if ($this->likes->removeElement($like)) {
             // set the owning side to null (unless already changed)
-            if ($like->getPost() === $this) {
-                $like->setPost(null);
+            if ($like->getPublication() === $this) {
+                $like->setPublication(null);
             }
         }
 
@@ -169,7 +168,7 @@ class Post
     {
         if (!$this->dislikes->contains($dislike)) {
             $this->dislikes->add($dislike);
-            $dislike->setPost($this);
+            $dislike->setPublication($this);
         }
 
         return $this;
@@ -179,8 +178,8 @@ class Post
     {
         if ($this->dislikes->removeElement($dislike)) {
             // set the owning side to null (unless already changed)
-            if ($dislike->getPost() === $this) {
-                $dislike->setPost(null);
+            if ($dislike->getPublication() === $this) {
+                $dislike->setPublication(null);
             }
         }
 
@@ -211,7 +210,7 @@ class Post
     {
         if (!$this->comments->contains($comment)) {
             $this->comments->add($comment);
-            $comment->setPost($this);
+            $comment->setPublication($this);
         }
 
         return $this;
@@ -221,8 +220,8 @@ class Post
     {
         if ($this->comments->removeElement($comment)) {
             // set the owning side to null (unless already changed)
-            if ($comment->getPost() === $this) {
-                $comment->setPost(null);
+            if ($comment->getPublication() === $this) {
+                $comment->setPublication(null);
             }
         }
 

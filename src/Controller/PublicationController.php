@@ -2,28 +2,27 @@
 
 namespace App\Controller;
 
-use App\Repository\PostRepository;
+use App\Repository\PublicationRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
-class PostController extends AbstractController {
+class PublicationController extends AbstractController {
 
-    private PostRepository $postRepository;
+    private PublicationRepository $publicationRepository;
     private JsonConverter $jsonConverter;
 
-    public function __construct(PostRepository $postRepository, JsonConverter $jsonConverter) {
-        $this->postRepository = $postRepository;
+    public function __construct(PublicationRepository $publicationRepository, JsonConverter $jsonConverter) {
+        $this->publicationRepository = $publicationRepository;
         $this->jsonConverter = $jsonConverter;
     }
 
-    #[Route('/api/posts', methods: ['GET'])]
+    #[Route('/api/publications', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/posts',
+        path: '/api/publications',
         summary: "Récupère toutes les publications",
         description: "Récupération de toutes les publications",
         tags: ['Publication'],
@@ -56,15 +55,15 @@ class PostController extends AbstractController {
         ]
     )]
     public function getAll(): Response {
-        $posts = $this->postRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($posts, ['public']);
+        $publications = $this->publicationRepository->findAll();
+        $data = $this->jsonConverter->encodeToJson($publications, ['public']);
 
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/posts/{id}', methods: ['GET'])]
+    #[Route('/api/publications/{id}', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/posts/{id}',
+        path: '/api/publications/{id}',
         summary: "Récupère une publication par son ID",
         description: "Récupération d'une publication par son ID",
         tags: ['Publication'],
@@ -99,20 +98,20 @@ class PostController extends AbstractController {
                 description: 'Introuvable',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Post not found')
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
                     ]
                 )
             )
         ]
     )]
     public function get($id): Response {
-        $post = $this->postRepository->find($id);
+        $publication = $this->publicationRepository->find($id);
 
-        if (!$post) {
-            return new JsonResponse(['error' => 'Post not found'], 404);
+        if (!$publication) {
+            return new JsonResponse(['error' => 'Publication not found'], 404);
         }
 
-        $data = $this->jsonConverter->encodeToJson($post, ['public']);
+        $data = $this->jsonConverter->encodeToJson($publication, ['public']);
 
         return new JsonResponse($data, 200, [], true);
     }

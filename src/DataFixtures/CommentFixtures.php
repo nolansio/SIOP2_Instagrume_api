@@ -3,7 +3,7 @@
 namespace App\DataFixtures;
 
 use App\Entity\Comment;
-use App\Entity\Post;
+use App\Entity\Publication;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -26,14 +26,14 @@ class CommentFixtures extends Fixture implements DependentFixtureInterface {
         $comment1->setUser($userRepository->findOneByUsername("elon"));
         $comment1->setContent("J'aime bien la seconde image");
         $comment1->setCreatedAt(new DateTimeImmutable("-1 hour"));
-        $comment1->setPost($this->getReference('post3', Post::class));
+        $comment1->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($comment1);
 
         $comment2 = new Comment();
         $comment2->setUser($userRepository->findOneByUsername("albert"));
         $comment2->setContent("Jolie photo !");
         $comment2->setCreatedAt(new DateTimeImmutable("-2 hour"));
-        $comment2->setPost($this->getReference('post3', Post::class));
+        $comment2->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($comment2);
 
         $comment3 = new Comment();
@@ -47,7 +47,7 @@ class CommentFixtures extends Fixture implements DependentFixtureInterface {
     }
 
     public function getDependencies(): array {
-        return [PostFixtures::class];
+        return [PublicationFixtures::class];
     }
 
 }

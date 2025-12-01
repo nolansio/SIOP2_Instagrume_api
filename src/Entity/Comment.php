@@ -56,7 +56,7 @@ class Comment
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['public'])]
-    private ?Post $post = null;
+    private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
@@ -108,7 +108,7 @@ class Comment
     public function setOriginalComment(?self $original_comment): static
     {
         $this->original_comment = $original_comment;
-        $this->setPost($original_comment->getPost());
+        $this->setPublication($original_comment->getPublication());
 
         return $this;
     }
@@ -126,7 +126,7 @@ class Comment
         if (!$this->comments->contains($comment)) {
             $this->comments->add($comment);
             $comment->setOriginalComment($this);
-            $comment->setPost($this->getPost());
+            $comment->setPublication($this->getPublication());
         }
 
         return $this;
@@ -204,14 +204,14 @@ class Comment
         return $this;
     }
 
-    public function getPost(): ?Post
+    public function getPublication(): ?Publication
     {
-        return $this->post;
+        return $this->publication;
     }
 
-    public function setPost(?Post $post): static
+    public function setPublication(?Publication $publication): static
     {
-        $this->post = $post;
+        $this->publication = $publication;
 
         return $this;
     }
