@@ -24,7 +24,7 @@ class Dislike
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[Groups(['public'])]
-    private ?Post $post = null;
+    private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
@@ -48,14 +48,14 @@ class Dislike
         return $this;
     }
 
-    public function getPost(): ?Post
+    public function getPublication(): ?Publication
     {
-        return $this->post;
+        return $this->publication;
     }
 
-    public function setPost(?Post $post): static
+    public function setPublication(?Publication $publication): static
     {
-        $this->post = $post;
+        $this->publication = $publication;
 
         return $this;
     }

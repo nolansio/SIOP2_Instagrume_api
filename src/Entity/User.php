@@ -52,11 +52,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $dislikes;
 
     /**
-     * @var Collection<int, Post>
+     * @var Collection<int, Publication>
      */
-    #[ORM\OneToMany(targetEntity: Post::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Publication::class, mappedBy: 'user', orphanRemoval: true)]
     #[Groups(['public'])]
-    private Collection $posts;
+    private Collection $publications;
 
     /**
      * @var Collection<int, Comment>
@@ -69,7 +69,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->likes = new ArrayCollection();
         $this->dislikes = new ArrayCollection();
-        $this->posts = new ArrayCollection();
+        $this->publications = new ArrayCollection();
         $this->comments = new ArrayCollection();
     }
 
@@ -215,29 +215,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Post>
+     * @return Collection<int, Publication>
      */
-    public function getPosts(): Collection
+    public function getPublications(): Collection
     {
-        return $this->posts;
+        return $this->publications;
     }
 
-    public function addPost(Post $post): static
+    public function addPublication(Publication $publication): static
     {
-        if (!$this->posts->contains($post)) {
-            $this->posts->add($post);
-            $post->setUser($this);
+        if (!$this->publications->contains($publication)) {
+            $this->publications->add($publication);
+            $publication->setUser($this);
         }
 
         return $this;
     }
 
-    public function removePost(Post $post): static
+    public function removePublication(Publication $publication): static
     {
-        if ($this->posts->removeElement($post)) {
+        if ($this->publications->removeElement($publication)) {
             // set the owning side to null (unless already changed)
-            if ($post->getUser() === $this) {
-                $post->setUser(null);
+            if ($publication->getUser() === $this) {
+                $publication->setUser(null);
             }
         }
 

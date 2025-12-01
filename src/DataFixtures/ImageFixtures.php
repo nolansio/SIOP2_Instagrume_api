@@ -3,7 +3,7 @@
 namespace App\DataFixtures;
 
 use App\Entity\Image;
-use App\Entity\Post;
+use App\Entity\Publication;
 use App\Repository\UserRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -24,39 +24,39 @@ class ImageFixtures extends Fixture implements DependentFixtureInterface {
         $image1 = new Image();
         $image1->setDescription("Carottes");
         $image1->setUrl("/images/upload1.png");
-        $image1->setPost($this->getReference('post1', Post::class));
+        $image1->setPublication($this->getReference('publication1', Publication::class));
         $manager->persist($image1);
 
         $image2 = new Image();
         $image2->setDescription("Choux");
         $image2->setUrl("/images/upload2.jpg");
-        $image2->setPost($this->getReference('post1', Post::class));
+        $image2->setPublication($this->getReference('publication1', Publication::class));
         $manager->persist($image2);
 
         $image3 = new Image();
         $image3->setDescription("Patates");
         $image3->setUrl("/images/upload3.webp");
-        $image3->setPost($this->getReference('post1', Post::class));
+        $image3->setPublication($this->getReference('publication1', Publication::class));
         $manager->persist($image3);
 
         // Publication 2
         $image4 = new Image();
         $image4->setDescription("Saumon grillé aux légumes");
         $image4->setUrl("/images/upload4.png");
-        $image4->setPost($this->getReference('post2', Post::class));
+        $image4->setPublication($this->getReference('publication2', Publication::class));
         $manager->persist($image4);
 
         // Publication 3
         $image5 = new Image();
         $image5->setDescription("Cerise 1");
         $image5->setUrl("/images/upload5.jpg");
-        $image5->setPost($this->getReference('post3', Post::class));
+        $image5->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($image5);
 
         $image6 = new Image();
         $image6->setDescription("Cerise 2");
         $image6->setUrl("/images/upload6.jpg");
-        $image6->setPost($this->getReference('post3', Post::class));
+        $image6->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($image6);
 
         // Avatars
@@ -76,7 +76,7 @@ class ImageFixtures extends Fixture implements DependentFixtureInterface {
     }
 
     public function getDependencies(): array {
-        return [PostFixtures::class];
+        return [PublicationFixtures::class];
     }
 
 }
