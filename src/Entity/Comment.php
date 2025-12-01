@@ -34,21 +34,21 @@ class Comment
     /**
      * @var Collection<int, self>
      */
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $comments;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $dislikes;
 

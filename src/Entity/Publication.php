@@ -29,21 +29,21 @@ class Publication
     /**
      * @var Collection<int, Image>
      */
-    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $images;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'publication', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'publication', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $dislikes;
 
@@ -55,7 +55,7 @@ class Publication
     /**
      * @var Collection<int, Comment>
      */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'publication', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $comments;
 
