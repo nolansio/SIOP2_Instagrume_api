@@ -37,6 +37,8 @@ security:
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/users, roles: ROLE_USER, methods: [PUT, DELETE] }
         - { path: ^/api/users, roles: PUBLIC_ACCESS, methods: [GET, POST] }
+        - { path: ^/api/publications, roles: ROLE_USER, methods: [ POST, PUT, DELETE ] }
+        - { path: ^/api/publications, roles: PUBLIC_ACCESS, methods: [ GET ] }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:
