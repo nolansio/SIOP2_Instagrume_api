@@ -25,7 +25,7 @@ class AuthController extends AbstractController {
                 required: ['username', 'password'],
                 properties: [
                     new OA\Property(property: 'username', type: 'string', example: 'user'),
-                    new OA\Property(property: 'password', type: 'string', example: 'user')
+                    new OA\Property(property: 'password', type: 'string', example: 'password')
                 ]
             )
         ),
