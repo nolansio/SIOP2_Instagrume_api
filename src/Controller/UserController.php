@@ -104,6 +104,52 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
+    #[Route('/api/users/username/{username}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/username/{username}',
+        summary: "Récupère un utilisateur par son nom d'utilisateur",
+        description: "Récupération d'un utilisateur par son nom d'utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getOneByUsername($username): Response {
+        $user = $this->userRepository->findOneByUsername($username);
+        $data = $this->jsonConverter->encodeToJson($user, ['public']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
     #[Route('/api/users', methods: ['POST'])]
     #[OA\Post(
         path: '/api/users',
