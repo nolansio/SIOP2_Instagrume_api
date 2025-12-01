@@ -61,9 +61,9 @@ class PublicationController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/publications/{id}', methods: ['GET'])]
+    #[Route('/api/publications/id/{id}', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/publications/{id}',
+        path: '/api/publications/id/{id}',
         summary: "Récupère une publication par son ID",
         description: "Récupération d'une publication par son ID",
         tags: ['Publication'],
@@ -115,5 +115,7 @@ class PublicationController extends AbstractController {
 
         return new JsonResponse($data, 200, [], true);
     }
+
+    // TODO : POST PUT DELETE
 
 }
