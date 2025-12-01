@@ -6,6 +6,7 @@ use App\Repository\PublicationRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
@@ -116,6 +117,99 @@ class PublicationController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    // TODO : POST PUT DELETE
+    #[Route('/api/publications', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/publications',
+        summary: "Créer une publication",
+        description: "Création d'une publication",
+        tags: ['Publication'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: [
+                'multipart/form-data' => new OA\MediaType(
+                    mediaType: 'multipart/form-data',
+                    schema: new OA\Schema(
+                        type: 'object',
+                        required: ['description', 'images'],
+                        properties: [
+                            new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
+                            new OA\Property(
+                                property: 'images',
+                                type: 'array',
+                                items: new OA\Items(type: 'string', format: 'binary')
+                            )
+                        ]
+                    )
+                )
+            ]
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Publication créée avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
+                        new OA\Property(property: 'created_at', type: 'string', example: '2025-11-27 12:06:32'),
+                        new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function insert(Request $request): Response {
+        $description = $request->request->get('description');
+        $images = $request->files->get('images', []);
+
+        if (!$images) {
+            $images = [];
+        } elseif (!is_array($images)) {
+            $images = [$images];
+        }
+
+        if (!$description && empty($images)) {
+            return new JsonResponse(['error' => "Parameters 'description' and 'images' required"], 400);
+        }
+
+        $ImagesDirectory = $this->getParameter('kernel.project_dir').'/public/images';
+        $imagePaths = [];
+
+        foreach ($images as $file) {
+            $name = uniqid().'.png';
+            $file->move($ImagesDirectory, $name);
+
+            $imagePaths[] = '/images/'.$name;
+        }
+
+        $publication = $this->publicationRepository->create($description, $this->getUser(), $imagePaths);
+        $data = $this->jsonConverter->encodeToJson($publication, ['public', 'private']);
+
+        return new JsonResponse($data, 201, [], true);
+    }
+
+    // TODO : PUT, DELETE
 
 }
