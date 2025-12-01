@@ -40,28 +40,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['private'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['private'])]
     private Collection $dislikes;
 
     /**
      * @var Collection<int, Publication>
      */
-    #[ORM\OneToMany(targetEntity: Publication::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Publication::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['public'])]
     private Collection $publications;
 
     /**
      * @var Collection<int, Comment>
      */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['private'])]
     private Collection $comments;
 
