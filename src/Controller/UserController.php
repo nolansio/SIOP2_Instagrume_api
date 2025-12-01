@@ -24,33 +24,13 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users',
-        summary: "Récupère un ou un groupe d'utilisateur",
-        description: "Récupération d'un ou un groupe d'utilisateur",
+        summary: "Récupère tout les utilisateurs",
+        description: "Récupération de tous les utilisateurs",
         tags: ['Utilisateur'],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "integer")
-            ),
-            new OA\Parameter(
-                name: "username",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "string")
-            ),
-            new OA\Parameter(
-                name: "search",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "string")
-            )
-        ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Utilisateur/s récupéré/s avec succès',
+                description: 'Utilisateurs récupérés avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -61,11 +41,39 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
+                response: 401,
+                description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Can't use 2 parameters. Only 1 or 0 is allowed")
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getAll(): Response {
+        $users = $this->userRepository->findAll();
+        $data = $this->jsonConverter->encodeToJson($users, ['public']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/id/{id}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/id/{id}',
+        summary: "Récupère un utilisateur par son ID",
+        description: "Récupération d'un utilisateur par son ID",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -89,40 +97,9 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function get(Request $request): Response {
-        $id = $request->query->get('id');
-        $username = $request->query->get('username');
-        $search = $request->query->get('search');
-        $data = null;
-
-        $params = array_filter(['id' => $id, 'username' => $username, 'search' => $search]);
-        if (count($params) > 1) {
-            return new JsonResponse(['error' => "Only one parameter ('id', 'username' or 'search') is allowed"], 400);
-        }
-
-        if (!$id && !$username && !$search) {
-            $users = $this->userRepository->findAll();
-            $data = $this->jsonConverter->encodeToJson($users, ['public']);
-        }
-
-        if ($id) {
-            $user = $this->userRepository->find($id);
-            $data = $this->jsonConverter->encodeToJson($user, ['public']);
-        }
-
-        if ($username) {
-            $user = $this->userRepository->findOneByUsername($username);
-            $data = $this->jsonConverter->encodeToJson($user, ['public']);
-        }
-
-        if ($search) {
-            $users = $this->userRepository->findManyByUsername($search);
-            $data = $this->jsonConverter->encodeToJson($users, ['public']);
-        }
-
-        if (!$data) {
-            return new JsonResponse(['error' => 'User not found'], 404);
-        }
+    public function getById($id): Response {
+        $user = $this->userRepository->find($id);
+        $data = $this->jsonConverter->encodeToJson($user, ['public']);
 
         return new JsonResponse($data, 200, [], true);
     }
