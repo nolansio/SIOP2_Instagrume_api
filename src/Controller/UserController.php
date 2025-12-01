@@ -143,9 +143,41 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getOneByUsername($username): Response {
+    public function getByUsername($username): Response {
         $user = $this->userRepository->findOneByUsername($username);
         $data = $this->jsonConverter->encodeToJson($user, ['public']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/search/{username}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/search/{username}',
+        summary: "Récupère plusieurs noms d'utilisateur par un nom d'utilisateur",
+        description: "Récupération de plusieurs noms d'utilisateur par un nom d'utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Noms d'utilisateur récupérés avec succès",
+                content: new OA\JsonContent(
+                    example: ['admin', 'albert', 'moderator']
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getUsernamesByUsername($username): Response {
+        $usernames = $this->userRepository->findUsernamesByUsername($username);
+        $data = $this->jsonConverter->encodeToJson($usernames, ['public']);
 
         return new JsonResponse($data, 200, [], true);
     }
