@@ -13,23 +13,23 @@ class Like
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'likes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'likes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
+    #[Groups(['all', 'user'])]
     private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'likes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?Comment $comment = null;
 
     public function getId(): ?int

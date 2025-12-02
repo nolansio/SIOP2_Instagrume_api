@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 
 class JsonConverter {
 
-    public function encodeToJson($data, $groups = ['public']): string {
+    public function encodeToJson($data, $groups = ['all']): string {
         $classMetadataFactory = new ClassMetadataFactory(new AttributeLoader());
         $normalizers = [
             new DateTimeNormalizer([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d H:i:s']),

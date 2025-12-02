@@ -57,7 +57,7 @@ class PublicationController extends AbstractController {
     )]
     public function getAll(): Response {
         $publications = $this->publicationRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($publications, ['public']);
+        $data = $this->jsonConverter->encodeToJson($publications, ['publication']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -112,7 +112,7 @@ class PublicationController extends AbstractController {
             return new JsonResponse(['error' => 'Publication not found'], 404);
         }
 
-        $data = $this->jsonConverter->encodeToJson($publication, ['public']);
+        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -205,7 +205,7 @@ class PublicationController extends AbstractController {
         }
 
         $publication = $this->publicationRepository->create($description, $this->getUser(), $imagePaths);
-        $data = $this->jsonConverter->encodeToJson($publication, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
         return new JsonResponse($data, 201, [], true);
     }

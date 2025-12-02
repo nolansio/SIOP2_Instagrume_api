@@ -53,7 +53,7 @@ class UserController extends AbstractController {
     )]
     public function getAll(): Response {
         $users = $this->userRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($users, ['public']);
+        $data = $this->jsonConverter->encodeToJson($users, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -104,7 +104,7 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        $data = $this->jsonConverter->encodeToJson($user, ['public']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -155,7 +155,7 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        $data = $this->jsonConverter->encodeToJson($user, ['public']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -187,7 +187,7 @@ class UserController extends AbstractController {
     )]
     public function getUsernamesByUsername($username): Response {
         $usernames = $this->userRepository->findUsernamesByUsername($username);
-        $data = $this->jsonConverter->encodeToJson($usernames, ['public']);
+        $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -258,7 +258,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -355,7 +355,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->update($username, $password, $user);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -461,7 +461,7 @@ class UserController extends AbstractController {
     )]
     public function myself(): Response {
         $user = $this->getUser();
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
         return new JsonResponse($data, 200, [], true);
     }
