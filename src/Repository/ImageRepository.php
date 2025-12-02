@@ -11,9 +11,10 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ImageRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(ManagerRegistry $doctrine)
     {
-        parent::__construct($registry, Image::class);
+        parent::__construct($doctrine, Image::class);
+        $this->doctrine = $doctrine;
     }
 
     //    /**

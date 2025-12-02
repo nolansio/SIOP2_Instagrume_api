@@ -3,6 +3,9 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use App\Service\ImageService;
+use App\Entity\Image;
+use App\Repository\ImageRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -10,15 +13,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
+use Doctrine\Persistence\ManagerRegistry;
+
 
 class UserController extends AbstractController {
 
-    private UserRepository $userRepository;
-    private JsonConverter $jsonConverter;
-
-    public function __construct(UserRepository $userRepository, JsonConverter $jsonConverter) {
-        $this->userRepository = $userRepository;
-        $this->jsonConverter = $jsonConverter;
+    public function __construct(private UserRepository $userRepository, private JsonConverter $jsonConverter, private ImageRepository $imageRepository) {
     }
 
     #[Route('/api/users', methods: ['GET'])]
@@ -198,79 +198,94 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 201, [], true);
     }
 
-    #[Route('/api/users', methods: ['PUT'])]
-    #[OA\Put(
-        path: '/api/users',
-        summary: "Mettre à jour un utilisateur",
-        description: "Mise à jour d'un utilisateur",
-        tags: ['Utilisateur'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['id'],
-                properties: [
-                    new OA\Property(property: 'id', type: 'integer', example: 1),
-                    new OA\Property(property: 'username', type: 'string', example: "user"),
-                    new OA\Property(property: 'password', type: 'string', example: 'password')
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Utilisateur modifié avec succès',
-                content: new OA\JsonContent(
+    #[Route('/api/users/update', methods: ['POST'])]
+    #[OA\Post(
+    path: '/api/users/update',
+    summary: "Mettre à jour un utilisateur",
+    description: "Mise à jour d'un utilisateur",
+    tags: ['Utilisateur'],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: [
+            // "application/json" => new OA\JsonContent(
+            //     required: ['id'],
+            //     properties: [
+            //         new OA\Property(property: 'id', type: 'integer', example: 1),
+            //         new OA\Property(property: 'username', type: 'string', example: "user"),
+            //         new OA\Property(property: 'password', type: 'string', example: 'password')
+            //     ]
+            // ),
+            "multipart/form-data" => new OA\MediaType(
+                mediaType: "multipart/form-data",
+                    schema: new OA\Schema(
+                    required: ["id"],
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'username', type: 'string', example: 'user'),
-                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(
+                            property: "profil",
+                            type: "string",
+                            format: "binary",
+                            description: "Image de profil à téléverser"
+                        ),
+                        new OA\Property(property: 'id', type: 'integer', example: "1"),
+                        new OA\Property(property: 'username', type: 'string', example: "alfred"),
+                        new OA\Property(property: 'password', type: 'string', example: "P@ssw0rd")
                     ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id', 'username' and 'password' required")
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 404,
-                description: 'Introuvable',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
-                    ]
+                    
                 )
             )
         ]
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Utilisateur modifié avec succès',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer', example: 1),
+                    new OA\Property(property: 'username', type: 'string', example: 'user'),
+                    new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                    new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                    new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                    new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                    new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                ]
+            )
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Mauvaise requête',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'error', type: 'string', example: "Parameters 'id', 'username' and 'password' required")
+                ]
+            )
+        ),
+        new OA\Response(
+            response: 401,
+            description: 'Non autorisé',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                ]
+            )
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Introuvable',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                ]
+            )
+        )
+    ]
     )]
-    public function update(Request $request): Response {
-        $data = json_decode($request->getContent(), true);
-
-        $id = $data['id'] ?? null;
-        $username = $data['username'] ?? null;
-        $password = $data['password'] ?? null;
-
-        if (!$id || !$username || !$password) {
-            return new JsonResponse(['error' => "Parameters 'id', 'username' and 'password' required"], 400);
-        }
-
+    public function update(Request $request, ManagerRegistry $doctrine): Response {
+        
+        $data = $request->getContent();
+        $id = $request->get('id');
+        $username = $request->get('username');
+        $password = $request->get('password');
         $user = $this->userRepository->find($id);
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
@@ -284,14 +299,46 @@ class UserController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
-        $user2 = $this->userRepository->findOneByUsername($username);
-        if ($user2 && $user->getId() != $user2->getId()) {
-            return new JsonResponse(['error' => "Username already exists"], 409);
+        if (!empty($username)) {
+            $user = $this->userRepository->updateUsername($username, $user);
         }
+        if (!empty($password)) {
+            $user = $this->userRepository->updatePassword($password, $user);
+        }
+        if (isset($_FILES['profil'])) {
+            $profil = $_FILES['profil'];
+            $uploadDir = '../public/images/'; // Dossier cible
 
-        $user = $this->userRepository->update($username, $password, $user);
+            $fileTmpPath = $profil['tmp_name'];
+            $fileName = $profil['name'];
+            $fileSize = $profil['size'];
+            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+
+            if (!in_array($fileExt, $allowedTypes)) {
+                return new JsonResponse("Bad image extension", 404);
+            }
+
+            $uniqueName = 'imgAvatar_' . $user->getUsername() . '_' . uniqid() . '.' . $fileExt;
+            $destPath = $uploadDir . $uniqueName;
+            if (ImageService::compressAndResizeImage($fileTmpPath, $destPath, 800, 800, 75)) {
+                $entityManager = $doctrine->getManager();
+                
+                $currentImg = $this->imageRepository->findBy(array('User' => $user))[0];
+                $newImg = new Image();
+                unlink($currentImg->getUrl());
+                $currentImg->setUrl($destPath);
+                $entityManager->persist($currentImg);
+                $entityManager->flush();
+            } else {
+                return new JsonResponse("Bad image extension", 404);
+            }
+
+            return new JsonResponse($profil, 200);
+
+        }
         $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
-
         return new JsonResponse($data, 200, [], true);
     }
 
