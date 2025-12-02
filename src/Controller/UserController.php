@@ -410,7 +410,7 @@ class UserController extends AbstractController {
 
         if (!$isCurrentUser && !$isAdmin) {
             return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
-        }
+        } // TODO
 
         $this->userRepository->delete($user);
 

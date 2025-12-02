@@ -210,6 +210,65 @@ class PublicationController extends AbstractController {
         return new JsonResponse($data, 201, [], true);
     }
 
-    // TODO : PUT, DELETE
+    /* Pas de méthode PUT : Modifier un poste peut permettre de changer son contenu après
+    avoir obtenu de la visibilité et ainsi tromper les utilisateurs qui avaient réagi à
+    la version initiale */
+
+    #[Route('/api/publications/id/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/publications/id/{id}',
+        summary: "Supprimer une publication",
+        description: "Suppression d'une publication",
+        tags: ['Publication'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Publication supprimé avec succès',
+                content: new OA\JsonContent(
+                    properties: []
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function delete($id): Response {
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+        }
+
+        $publication = $this->publicationRepository->find($id);
+        if (!$publication) {
+            return new JsonResponse(['error' => "Publication not found"], 404);
+        }
+
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $publication->getUserIdentifier();
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$isCurrentUser && !$isAdmin) {
+            return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
+        } // TODO
+
+        $this->publicationRepository->delete($publication);
+
+        return new JsonResponse([], 200);
+    }
 
 }
