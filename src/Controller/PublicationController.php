@@ -278,9 +278,9 @@ class PublicationController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $publication->getUserIdentifier();
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
 
-        if (!$isCurrentUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
         }
 

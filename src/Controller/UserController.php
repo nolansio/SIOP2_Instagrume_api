@@ -343,9 +343,9 @@ class UserController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
 
-        if (!$isCurrentUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
@@ -424,9 +424,9 @@ class UserController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
 
-        if (!$isCurrentUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
         }
 
