@@ -382,12 +382,21 @@ class UserController extends AbstractController {
             if (ImageService::compressAndResizeImage($fileTmpPath, $destPath, 800, 800, 75)) {
                 $entityManager = $doctrine->getManager();
                 
-                $currentImg = $this->imageRepository->findBy(array('User' => $user))[0];
+                $currentImg = $this->imageRepository->findBy(array('user' => $user));
                 $newImg = new Image();
-                unlink($currentImg->getUrl());
-                $currentImg->setUrl($destPath);
-                $entityManager->persist($currentImg);
+                if (!empty($currentImg)) {
+                    $currentImg = $currentImg[0];
+                    unlink($currentImg->getUrl());
+                    $currentImg->setUrl($destPath);
+                    $entityManager->persist($currentImg);
+                } else {
+                    $newImg->setUrl($destPath);
+                    $newImg->setDescription($user->getUsername());
+                    $newImg->setUser($user);
+                    $entityManager->persist($newImg);
+                }
                 $entityManager->flush();
+                
             } else {
                 return new JsonResponse("Bad image extension", 404);
             }

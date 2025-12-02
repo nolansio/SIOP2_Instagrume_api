@@ -29,9 +29,9 @@ class Image
     #[Groups(['all'])]
     private ?Publication $publication = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(inversedBy: 'images')]
     #[Groups(['all'])]
-    private ?User $User = null;
+    private ?User $user = null;
 
     public function getId(): ?int
     {
@@ -76,13 +76,12 @@ class Image
 
     public function getUser(): ?User
     {
-        return $this->User;
+        return $this->user;
     }
 
     public function setUser(?User $User): static
     {
-        $this->User = $User;
-
+        $this->user = $User;
         return $this;
     }
 }
