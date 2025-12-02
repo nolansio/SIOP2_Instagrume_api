@@ -12,23 +12,23 @@ class Dislike
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['private'])]
+    #[Groups(['private_dislike'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
-    private ?Post $post = null;
+    #[Groups(['all', 'user'])]
+    private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication'])]
     private ?Comment $comment = null;
 
     public function getId(): ?int
@@ -48,14 +48,14 @@ class Dislike
         return $this;
     }
 
-    public function getPost(): ?Post
+    public function getPublication(): ?Publication
     {
-        return $this->post;
+        return $this->publication;
     }
 
-    public function setPost(?Post $post): static
+    public function setPublication(?Publication $publication): static
     {
-        $this->post = $post;
+        $this->publication = $publication;
 
         return $this;
     }

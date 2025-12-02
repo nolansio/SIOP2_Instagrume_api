@@ -24,48 +24,56 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users',
-        summary: "Récupère un ou un groupe d'utilisateur",
-        description: "Récupération d'un ou un groupe d'utilisateur",
+        summary: "Récupérer tout les utilisateurs",
+        description: "Récupération de tous les utilisateurs",
         tags: ['Utilisateur'],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "integer")
-            ),
-            new OA\Parameter(
-                name: "username",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "string")
-            ),
-            new OA\Parameter(
-                name: "search",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "string")
-            )
-        ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Utilisateur/s récupéré/s avec succès',
+                description: 'Utilisateurs récupérés avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
             new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
+                response: 401,
+                description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Can't use 2 parameters. Only 1 or 0 is allowed")
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getAll(): Response {
+        $users = $this->userRepository->findAll();
+        $data = $this->jsonConverter->encodeToJson($users, ['user']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/id/{id}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/id/{id}',
+        summary: "Récupérer un utilisateur par son ID",
+        description: "Récupération d'un utilisateur par son ID",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -89,40 +97,97 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function get(Request $request): Response {
-        $id = $request->query->get('id');
-        $username = $request->query->get('username');
-        $search = $request->query->get('search');
-        $data = null;
+    public function getById($id): Response {
+        $user = $this->userRepository->find($id);
 
-        $params = array_filter(['id' => $id, 'username' => $username, 'search' => $search]);
-        if (count($params) > 1) {
-            return new JsonResponse(['error' => "Only one parameter ('id', 'username' or 'search') is allowed"], 400);
-        }
-
-        if (!$id && !$username && !$search) {
-            $users = $this->userRepository->findAll();
-            $data = $this->jsonConverter->encodeToJson($users, ['public']);
-        }
-
-        if ($id) {
-            $user = $this->userRepository->find($id);
-            $data = $this->jsonConverter->encodeToJson($user, ['public']);
-        }
-
-        if ($username) {
-            $user = $this->userRepository->findOneByUsername($username);
-            $data = $this->jsonConverter->encodeToJson($user, ['public']);
-        }
-
-        if ($search) {
-            $users = $this->userRepository->findManyByUsername($search);
-            $data = $this->jsonConverter->encodeToJson($users, ['public']);
-        }
-
-        if (!$data) {
+        if (!$user) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
+
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/username/{username}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/username/{username}',
+        summary: "Récupérer un utilisateur par son nom d'utilisateur",
+        description: "Récupération d'un utilisateur par son nom d'utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getByUsername($username): Response {
+        $user = $this->userRepository->findOneByUsername($username);
+
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
+
+        return new JsonResponse($data, 200, [], true);
+    }
+
+    #[Route('/api/users/search/{username}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/search/{username}',
+        summary: "Récupérer plusieurs noms d'utilisateur par un nom d'utilisateur",
+        description: "Récupération de plusieurs noms d'utilisateur par un nom d'utilisateur",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Noms d'utilisateur récupérés avec succès",
+                content: new OA\JsonContent(
+                    example: ['admin', 'albert', 'moderator']
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getUsernamesByUsername($username): Response {
+        $usernames = $this->userRepository->findUsernamesByUsername($username);
+        $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -130,7 +195,7 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['POST'])]
     #[OA\Post(
         path: '/api/users',
-        summary: "Créé un utilisateur",
+        summary: "Créer un utilisateur",
         description: "Création d'un utilisateur",
         tags: ['Utilisateur'],
         requestBody: new OA\RequestBody(
@@ -154,7 +219,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
@@ -193,7 +258,7 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
         return new JsonResponse($data, 201, [], true);
     }
@@ -207,14 +272,6 @@ class UserController extends AbstractController {
     requestBody: new OA\RequestBody(
         required: true,
         content: [
-            // "application/json" => new OA\JsonContent(
-            //     required: ['id'],
-            //     properties: [
-            //         new OA\Property(property: 'id', type: 'integer', example: 1),
-            //         new OA\Property(property: 'username', type: 'string', example: "user"),
-            //         new OA\Property(property: 'password', type: 'string', example: 'password')
-            //     ]
-            // ),
             "multipart/form-data" => new OA\MediaType(
                 mediaType: "multipart/form-data",
                     schema: new OA\Schema(
@@ -293,9 +350,9 @@ class UserController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
 
-        if (!$isCurrentUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
@@ -342,9 +399,9 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/users/{id}', methods: ['DELETE'])]
+    #[Route('/api/users/id/{id}', methods: ['DELETE'])]
     #[OA\Delete(
-        path: '/api/users/{id}',
+        path: '/api/users/id/{id}',
         summary: "Supprimer un utilisateur",
         description: "Suppression d'un utilisateur",
         tags: ['Utilisateur'],
@@ -357,11 +414,29 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "'Parameters 'id' is required'")
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 401,
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this user')
                     ]
                 )
             ),
@@ -388,9 +463,9 @@ class UserController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
 
-        if (!$isCurrentUser && !$isAdmin) {
+        if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
         }
 
@@ -399,10 +474,10 @@ class UserController extends AbstractController {
         return new JsonResponse([], 200);
     }
 
-    #[Route('/api/myself', methods: ['GET'])]
+    #[Route('/api/users/myself', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/myself',
-        summary: "Récupère son utilisateur",
+        path: '/api/users/myself',
+        summary: "Récupérer son utilisateur",
         description: "Récupération de son utilisateur",
         tags: ['Utilisateur'],
         responses: [
@@ -416,7 +491,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
@@ -443,7 +518,7 @@ class UserController extends AbstractController {
     )]
     public function myself(): Response {
         $user = $this->getUser();
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
         return new JsonResponse($data, 200, [], true);
     }

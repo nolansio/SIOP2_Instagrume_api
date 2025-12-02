@@ -15,53 +15,53 @@ class Comment
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?string $content = null;
 
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?\DateTimeImmutable $created_at = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?self $original_comment = null;
 
     /**
      * @var Collection<int, self>
      */
-    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true)]
-    #[Groups(['public'])]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'original_comment', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $comments;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true)]
-    #[Groups(['public'])]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'comment', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true)]
-    #[Groups(['public'])]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'comment', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $dislikes;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['public'])]
-    private ?Post $post = null;
+    #[Groups(['all'])]
+    private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication'])]
     private ?User $user = null;
 
     public function __construct()
@@ -108,7 +108,7 @@ class Comment
     public function setOriginalComment(?self $original_comment): static
     {
         $this->original_comment = $original_comment;
-        $this->setPost($original_comment->getPost());
+        $this->setPublication($original_comment->getPublication());
 
         return $this;
     }
@@ -126,7 +126,7 @@ class Comment
         if (!$this->comments->contains($comment)) {
             $this->comments->add($comment);
             $comment->setOriginalComment($this);
-            $comment->setPost($this->getPost());
+            $comment->setPublication($this->getPublication());
         }
 
         return $this;
@@ -204,14 +204,14 @@ class Comment
         return $this;
     }
 
-    public function getPost(): ?Post
+    public function getPublication(): ?Publication
     {
-        return $this->post;
+        return $this->publication;
     }
 
-    public function setPost(?Post $post): static
+    public function setPublication(?Publication $publication): static
     {
-        $this->post = $post;
+        $this->publication = $publication;
 
         return $this;
     }

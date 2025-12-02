@@ -17,18 +17,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'user', 'publication'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'user', 'publication'])]
     private ?string $username = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'user', 'publication'])]
     private array $roles = [];
 
     /**
@@ -40,36 +40,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['private'])]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['private_user'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
-    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['private'])]
+    #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['private_user'])]
     private Collection $dislikes;
 
     /**
-     * @var Collection<int, Post>
+     * @var Collection<int, Publication>
      */
-    #[ORM\OneToMany(targetEntity: Post::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['public'])]
-    private Collection $posts;
+    #[ORM\OneToMany(targetEntity: Publication::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['all', 'user'])]
+    private Collection $publications;
 
     /**
      * @var Collection<int, Comment>
      */
-    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['private'])]
+    #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'user', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['private_user'])]
     private Collection $comments;
 
     public function __construct()
     {
         $this->likes = new ArrayCollection();
         $this->dislikes = new ArrayCollection();
-        $this->posts = new ArrayCollection();
+        $this->publications = new ArrayCollection();
         $this->comments = new ArrayCollection();
     }
 
@@ -215,29 +215,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Post>
+     * @return Collection<int, Publication>
      */
-    public function getPosts(): Collection
+    public function getPublications(): Collection
     {
-        return $this->posts;
+        return $this->publications;
     }
 
-    public function addPost(Post $post): static
+    public function addPublication(Publication $publication): static
     {
-        if (!$this->posts->contains($post)) {
-            $this->posts->add($post);
-            $post->setUser($this);
+        if (!$this->publications->contains($publication)) {
+            $this->publications->add($publication);
+            $publication->setUser($this);
         }
 
         return $this;
     }
 
-    public function removePost(Post $post): static
+    public function removePublication(Publication $publication): static
     {
-        if ($this->posts->removeElement($post)) {
+        if ($this->publications->removeElement($publication)) {
             // set the owning side to null (unless already changed)
-            if ($post->getUser() === $this) {
-                $post->setUser(null);
+            if ($publication->getUser() === $this) {
+                $publication->setUser(null);
             }
         }
 

@@ -13,24 +13,24 @@ class Image
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?string $url = null;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['public'])]
-    private ?Post $post = null;
+    #[Groups(['all'])]
+    private ?Publication $publication = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    #[Groups(['public'])]
+    #[Groups(['all'])]
     private ?User $User = null;
 
     public function getId(): ?int
@@ -62,14 +62,14 @@ class Image
         return $this;
     }
 
-    public function getPost(): ?Post
+    public function getPublication(): ?Publication
     {
-        return $this->post;
+        return $this->publication;
     }
 
-    public function setPost(?Post $post): static
+    public function setPublication(?Publication $publication): static
     {
-        $this->post = $post;
+        $this->publication = $publication;
 
         return $this;
     }

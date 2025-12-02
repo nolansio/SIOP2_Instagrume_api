@@ -16,8 +16,8 @@ class AuthController extends AbstractController {
     #[Route('/api/token', methods: ['POST'])]
     #[OA\Post(
         path: '/api/token',
-        summary: 'Génère un token',
-        description: 'Authentifie un utilisateur et renvoie un token',
+        summary: "Générer un token",
+        description: "Authentification d'un utilisateur et renvoie d'un jeton",
         tags: ['Authentification'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -25,14 +25,14 @@ class AuthController extends AbstractController {
                 required: ['username', 'password'],
                 properties: [
                     new OA\Property(property: 'username', type: 'string', example: 'user'),
-                    new OA\Property(property: 'password', type: 'string', example: 'user')
+                    new OA\Property(property: 'password', type: 'string', example: 'password')
                 ]
             )
         ),
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Token généré avec succès',
+                description: 'Jeton généré avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')
