@@ -24,7 +24,7 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users',
-        summary: "Récupère tout les utilisateurs",
+        summary: "Récupérer tout les utilisateurs",
         description: "Récupération de tous les utilisateurs",
         tags: ['Utilisateur'],
         responses: [
@@ -61,7 +61,7 @@ class UserController extends AbstractController {
     #[Route('/api/users/id/{id}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users/id/{id}',
-        summary: "Récupère un utilisateur par son ID",
+        summary: "Récupérer un utilisateur par son ID",
         description: "Récupération d'un utilisateur par son ID",
         tags: ['Utilisateur'],
         responses: [
@@ -112,7 +112,7 @@ class UserController extends AbstractController {
     #[Route('/api/users/username/{username}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users/username/{username}',
-        summary: "Récupère un utilisateur par son nom d'utilisateur",
+        summary: "Récupérer un utilisateur par son nom d'utilisateur",
         description: "Récupération d'un utilisateur par son nom d'utilisateur",
         tags: ['Utilisateur'],
         responses: [
@@ -163,7 +163,7 @@ class UserController extends AbstractController {
     #[Route('/api/users/search/{username}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users/search/{username}',
-        summary: "Récupère plusieurs noms d'utilisateur par un nom d'utilisateur",
+        summary: "Récupérer plusieurs noms d'utilisateur par un nom d'utilisateur",
         description: "Récupération de plusieurs noms d'utilisateur par un nom d'utilisateur",
         tags: ['Utilisateur'],
         responses: [
@@ -195,7 +195,7 @@ class UserController extends AbstractController {
     #[Route('/api/users', methods: ['POST'])]
     #[OA\Post(
         path: '/api/users',
-        summary: "Créé un utilisateur",
+        summary: "Créer un utilisateur",
         description: "Création d'un utilisateur",
         tags: ['Utilisateur'],
         requestBody: new OA\RequestBody(
@@ -420,7 +420,7 @@ class UserController extends AbstractController {
     #[Route('/api/users/myself', methods: ['GET'])]
     #[OA\Get(
         path: '/api/users/myself',
-        summary: "Récupère son utilisateur",
+        summary: "Récupérer son utilisateur",
         description: "Récupération de son utilisateur",
         tags: ['Utilisateur'],
         responses: [

@@ -24,7 +24,7 @@ class PublicationController extends AbstractController {
     #[Route('/api/publications', methods: ['GET'])]
     #[OA\Get(
         path: '/api/publications',
-        summary: "Récupère toutes les publications",
+        summary: "Récupérer toutes les publications",
         description: "Récupération de toutes les publications",
         tags: ['Publication'],
         responses: [
@@ -65,7 +65,7 @@ class PublicationController extends AbstractController {
     #[Route('/api/publications/id/{id}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/publications/id/{id}',
-        summary: "Récupère une publication par son ID",
+        summary: "Récupérer une publication par son ID",
         description: "Récupération d'une publication par son ID",
         tags: ['Publication'],
         responses: [
