@@ -17,7 +17,7 @@ class AuthController extends AbstractController {
     #[OA\Post(
         path: '/api/token',
         summary: "Générer un token",
-        description: "'Authentification d'un utilisateur et renvoie d'un jeton",
+        description: "Authentification d'un utilisateur et renvoie d'un jeton",
         tags: ['Authentification'],
         requestBody: new OA\RequestBody(
             required: true,
