@@ -42,4 +42,11 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
+    public function delete($publication): void {
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->remove($publication);
+        $entityManager->flush();
+    }
+
 }

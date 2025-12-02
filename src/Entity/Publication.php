@@ -15,48 +15,48 @@ class Publication
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?\DateTimeImmutable $created_at = null;
 
     /**
      * @var Collection<int, Image>
      */
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $images;
 
     /**
      * @var Collection<int, Like>
      */
     #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $likes;
 
     /**
      * @var Collection<int, Dislike>
      */
     #[ORM\OneToMany(targetEntity: Dislike::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $dislikes;
 
     #[ORM\ManyToOne(inversedBy: 'publications')]
     #[ORM\JoinColumn(onDelete: "CASCADE", nullable: false)]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication'])]
     private ?User $user = null;
 
     /**
      * @var Collection<int, Comment>
      */
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'publication', orphanRemoval: true, cascade: ['persist'])]
-    #[Groups(['public'])]
+    #[Groups(['all', 'publication', 'user'])]
     private Collection $comments;
 
     public function __construct()

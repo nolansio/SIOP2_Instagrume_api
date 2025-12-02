@@ -24,7 +24,7 @@ class PublicationController extends AbstractController {
     #[Route('/api/publications', methods: ['GET'])]
     #[OA\Get(
         path: '/api/publications',
-        summary: "Récupère toutes les publications",
+        summary: "Récupérer toutes les publications",
         description: "Récupération de toutes les publications",
         tags: ['Publication'],
         responses: [
@@ -57,7 +57,7 @@ class PublicationController extends AbstractController {
     )]
     public function getAll(): Response {
         $publications = $this->publicationRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($publications, ['public']);
+        $data = $this->jsonConverter->encodeToJson($publications, ['publication']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -65,7 +65,7 @@ class PublicationController extends AbstractController {
     #[Route('/api/publications/id/{id}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/publications/id/{id}',
-        summary: "Récupère une publication par son ID",
+        summary: "Récupérer une publication par son ID",
         description: "Récupération d'une publication par son ID",
         tags: ['Publication'],
         responses: [
@@ -112,7 +112,7 @@ class PublicationController extends AbstractController {
             return new JsonResponse(['error' => 'Publication not found'], 404);
         }
 
-        $data = $this->jsonConverter->encodeToJson($publication, ['public']);
+        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
         return new JsonResponse($data, 200, [], true);
     }
@@ -205,11 +205,88 @@ class PublicationController extends AbstractController {
         }
 
         $publication = $this->publicationRepository->create($description, $this->getUser(), $imagePaths);
-        $data = $this->jsonConverter->encodeToJson($publication, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
         return new JsonResponse($data, 201, [], true);
     }
 
-    // TODO : PUT, DELETE
+    /* Pas de méthode PUT : Modifier un poste peut permettre de changer son contenu après
+    avoir obtenu de la visibilité et ainsi tromper les utilisateurs qui avaient réagi à
+    la version initiale */
+
+    #[Route('/api/publications/id/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/publications/id/{id}',
+        summary: "Supprimer une publication",
+        description: "Suppression d'une publication",
+        tags: ['Publication'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Publication supprimé avec succès',
+                content: new OA\JsonContent(
+                    properties: []
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "'Parameters 'id' is required'")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this publication')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function delete($id): Response {
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+        }
+
+        $publication = $this->publicationRepository->find($id);
+        if (!$publication) {
+            return new JsonResponse(['error' => "Publication not found"], 404);
+        }
+
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $publication->getUserIdentifier();
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$isCurrentUser && !$isMod) {
+            return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
+        }
+
+        $this->publicationRepository->delete($publication);
+
+        return new JsonResponse([], 200);
+    }
 
 }
