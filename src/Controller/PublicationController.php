@@ -238,6 +238,15 @@ class PublicationController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this publication')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -264,7 +273,7 @@ class PublicationController extends AbstractController {
 
         if (!$isCurrentUser && !$isAdmin) {
             return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
-        } // TODO
+        }
 
         $this->publicationRepository->delete($publication);
 
