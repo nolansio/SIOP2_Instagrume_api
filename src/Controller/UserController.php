@@ -360,9 +360,9 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/users/{id}', methods: ['DELETE'])]
+    #[Route('/api/users/id/{id}', methods: ['DELETE'])]
     #[OA\Delete(
-        path: '/api/users/{id}',
+        path: '/api/users/id/{id}',
         summary: "Supprimer un utilisateur",
         description: "Suppression d'un utilisateur",
         tags: ['Utilisateur'],
@@ -417,9 +417,9 @@ class UserController extends AbstractController {
         return new JsonResponse([], 200);
     }
 
-    #[Route('/api/myself', methods: ['GET'])]
+    #[Route('/api/users/myself', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/myself',
+        path: '/api/users/myself',
         summary: "Récupère son utilisateur",
         description: "Récupération de son utilisateur",
         tags: ['Utilisateur'],
