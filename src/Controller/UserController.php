@@ -375,6 +375,15 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "'Parameters 'id' is required'")
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 401,
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
