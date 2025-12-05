@@ -301,10 +301,8 @@ class UserController extends AbstractController {
                     new OA\Property(property: 'id', type: 'integer', example: 1),
                     new OA\Property(property: 'username', type: 'string', example: 'user'),
                     new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                    new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'posts', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                    new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: [])
                 ]
             )
         ),
@@ -403,7 +401,7 @@ class UserController extends AbstractController {
         }
         if (isset($_FILES['profil'])) {
             $profil = $_FILES['profil'];
-            $uploadDir = '../public/images/'; // Dossier cible
+            $uploadDir = '../public/images/';
 
             $fileTmpPath = $profil['tmp_name'];
             $fileName = $profil['name'];
