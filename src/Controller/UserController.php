@@ -335,6 +335,45 @@ class UserController extends AbstractController {
     ]
     )]
     public function update(Request $request, ManagerRegistry $doctrine): Response {
+        // === Fix PUT + multipart ===
+        if ($request->getMethod() === 'PUT') {
+            $contentType = $request->headers->get('Content-Type');
+            if (strpos($contentType, 'multipart/form-data') !== false) {
+                $boundary = substr($contentType, strpos($contentType, "boundary=") + 9);
+                $raw = file_get_contents("php://input");
+                $blocks = preg_split("/-+$boundary/", $raw);
+                array_pop($blocks);
+
+                foreach ($blocks as $block) {
+                    if (empty($block)) continue;
+
+                    if (strpos($block, "filename=") !== false) {
+                        preg_match('/name="([^"]*)"; filename="([^"]*)"/', $block, $matches);
+                        preg_match('/Content-Type: ([^\r\n]+)/', $block, $type);
+                        preg_match('/\r\n\r\n(.*)\r\n$/s', $block, $body);
+
+                        $tmp = tempnam(sys_get_temp_dir(), "php");
+                        file_put_contents($tmp, $body[1]);
+
+                        $_FILES[$matches[1]] = [
+                            'name' => $matches[2],
+                            'tmp_name' => $tmp,
+                            'type' => $type[1],
+                            'error' => 0,
+                            'size' => filesize($tmp)
+                        ];
+                    } else {
+                        preg_match('/name="([^"]*)"\r\n\r\n(.*)\r\n$/s', $block, $matches);
+                        $_POST[$matches[1]] = $matches[2];
+                    }
+                }
+
+                $request->request->replace($_POST);
+                $request->files->replace($_FILES);
+            }
+        }
+        // === Fin du fix ===
+
         $id = $request->request->get('id');
         $username = $request->request->get('username');
         $password = $request->request->get('password');
