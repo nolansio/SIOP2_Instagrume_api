@@ -11,9 +11,23 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class DislikeRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(private ManagerRegistry $doctrine)
     {
-        parent::__construct($registry, Dislike::class);
+        parent::__construct($doctrine, Dislike::class);
+    }
+
+    public function create($like): Dislike {
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->persist($like);
+        $entityManager->flush();
+        return $like;
+    }
+
+    public function delete($like): Dislike {
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->remove($like);
+        $entityManager->flush();
+        return $like;
     }
 
     //    /**
