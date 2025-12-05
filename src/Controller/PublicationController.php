@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Doctrine\Persistence\ManagerRegistry;
 use OpenApi\Attributes as OA;
 
 class PublicationController extends AbstractController {
@@ -210,9 +211,78 @@ class PublicationController extends AbstractController {
         return new JsonResponse($data, 201, [], true);
     }
 
-    /* Pas de méthode PUT : Modifier un poste peut permettre de changer son contenu après
-    avoir obtenu de la visibilité et ainsi tromper les utilisateurs qui avaient réagi à
-    la version initiale */
+    #[Route('/api/publications', methods: ['PUT'])]
+    #[OA\Put(
+        path: '/api/publications',
+        summary: "Modifier la description d'une publication",
+        description: "Modifier la description d'une publication",
+        tags: ['Publication'],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Publication créée avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
+                        new OA\Property(property: 'created_at', type: 'string', example: '2025-11-27 12:06:32'),
+                        new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            type: Publication::class,
+            example: [
+                "id" => 7,
+                "description"=> "Abra exemple"
+            ]
+        )
+    )]
+    public function update(Request $request, ManagerRegistry $doctrine): JsonResponse {
+        $json = $request->getContent();
+        $data = json_decode($json, true);
+        if (!empty($data["description"]) && !empty($data["id"])) {
+            $entityManager = $doctrine->getManager();
+            $description = $data["description"];
+            $id = $data["id"];
+            $publication = $this->publicationRepository->find($id);
+            if (!$publication) {
+                return new JsonResponse(["error" =>"publication not found"], 404);
+            }
+            $publication->setDescription($description);
+            $entityManager->persist($publication);
+            $entityManager->flush();
+            return new JsonResponse($this->jsonConverter->encodeToJson($publication), 200, [], true);
+        } else {
+            return new JsonResponse(["error" =>"bad fields"], 422);
+        }
+    }
 
     #[Route('/api/publications/id/{id}', methods: ['DELETE'])]
     #[OA\Delete(
