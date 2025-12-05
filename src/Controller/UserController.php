@@ -263,9 +263,9 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 201, [], true);
     }
 
-    #[Route('/api/users/update', methods: ['POST'])]
-    #[OA\Post(
-    path: '/api/users/update',
+    #[Route('/api/users', methods: ['PUT'])]
+    #[OA\Put(
+    path: '/api/users',
     summary: "Mettre à jour un utilisateur",
     description: "Mise à jour d'un utilisateur",
     tags: ['Utilisateur'],
@@ -284,10 +284,10 @@ class UserController extends AbstractController {
                             description: "Image de profil à téléverser"
                         ),
                         new OA\Property(property: 'id', type: 'integer', example: "1"),
-                        new OA\Property(property: 'username', type: 'string', example: "alfred"),
-                        new OA\Property(property: 'password', type: 'string', example: "P@ssw0rd")
+                        new OA\Property(property: 'username', type: 'string', example: "user"),
+                        new OA\Property(property: 'password', type: 'string', example: "password")
                     ]
-                    
+
                 )
             )
         ]
@@ -338,12 +338,51 @@ class UserController extends AbstractController {
     ]
     )]
     public function update(Request $request, ManagerRegistry $doctrine): Response {
-        
-        $data = $request->getContent();
-        $id = $request->get('id');
-        $username = $request->get('username');
-        $password = $request->get('password');
+        $contentType = $request->headers->get('Content-Type');
+        if (str_contains($contentType, 'multipart/form-data')) {
+            $boundary = substr($contentType, strpos($contentType, "boundary=") + 9);
+            $raw = file_get_contents("php://input");
+            $blocks = preg_split("/-+$boundary/", $raw);
+            array_pop($blocks);
+
+            foreach ($blocks as $block) {
+                if (empty($block)) continue;
+
+                if (str_contains($block, "filename=")) {
+                    preg_match('/name="([^"]*)"; filename="([^"]*)"/', $block, $matches);
+                    preg_match('/Content-Type: ([^\r\n]+)/', $block, $type);
+                    preg_match('/\r\n\r\n(.*)\r\n$/s', $block, $body);
+
+                    $tmp = tempnam(sys_get_temp_dir(), "php");
+                    file_put_contents($tmp, $body[1]);
+
+                    $_FILES[$matches[1]] = [
+                        'name' => $matches[2],
+                        'tmp_name' => $tmp,
+                        'type' => $type[1],
+                        'error' => 0,
+                        'size' => filesize($tmp)
+                    ];
+                } else {
+                    preg_match('/name="([^"]*)"\r\n\r\n(.*)\r\n$/s', $block, $matches);
+                    $_POST[$matches[1]] = $matches[2];
+                }
+            }
+
+            $request->request->replace($_POST);
+            $request->files->replace($_FILES);
+        }
+
+        $id = $request->request->get('id');
+        $username = $request->request->get('username');
+        $password = $request->request->get('password');
+
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameter 'id' required"], 400);
+        }
+
         $user = $this->userRepository->find($id);
+
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
         }
@@ -368,7 +407,6 @@ class UserController extends AbstractController {
 
             $fileTmpPath = $profil['tmp_name'];
             $fileName = $profil['name'];
-            $fileSize = $profil['size'];
             $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
             $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
@@ -381,7 +419,7 @@ class UserController extends AbstractController {
             $destPath = $uploadDir . $uniqueName;
             if (ImageService::compressAndResizeImage($fileTmpPath, $destPath, 800, 800, 75)) {
                 $entityManager = $doctrine->getManager();
-                
+
                 $currentImg = $this->imageRepository->findBy(array('user' => $user));
                 $newImg = new Image();
                 if (!empty($currentImg)) {
@@ -396,7 +434,7 @@ class UserController extends AbstractController {
                     $entityManager->persist($newImg);
                 }
                 $entityManager->flush();
-                
+
             } else {
                 return new JsonResponse("Bad image extension", 404);
             }
@@ -404,7 +442,7 @@ class UserController extends AbstractController {
             return new JsonResponse($profil, 200);
 
         }
-        $data = $this->jsonConverter->encodeToJson($user, ['public', 'private']);
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
         return new JsonResponse($data, 200, [], true);
     }
 
