@@ -72,6 +72,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['all', 'user'])]
     private Collection $images;
 
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['all', 'user'])]
+    private bool $isBanned = false;
+
     public function __construct()
     {
         $this->likes = new ArrayCollection();
@@ -311,4 +315,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function isBanned(): bool
+    {
+        return $this->isBanned;
+    }
+
+    public function setIsBanned(bool $isBanned): self
+    {
+        $this->isBanned = $isBanned;
+        return $this;
+    }
+
 }
