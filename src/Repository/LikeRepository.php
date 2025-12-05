@@ -11,11 +11,24 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LikeRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(private ManagerRegistry $doctrine)
     {
-        parent::__construct($registry, Like::class);
+        parent::__construct($doctrine, Like::class);
     }
 
+    public function create($like): Like {
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->persist($like);
+        $entityManager->flush();
+        return $like;
+    }
+
+    public function delete($like): Like {
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->remove($like);
+        $entityManager->flush();
+        return $like;
+    }
 //    /**
 //     * @return Like[] Returns an array of Like objects
 //     */
