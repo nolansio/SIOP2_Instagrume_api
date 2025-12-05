@@ -338,7 +338,7 @@ class UserController extends AbstractController {
         // === Fix PUT + multipart ===
         if ($request->getMethod() === 'PUT') {
             $contentType = $request->headers->get('Content-Type');
-            if (strpos($contentType, 'multipart/form-data') !== false) {
+            if (str_contains($contentType, 'multipart/form-data')) {
                 $boundary = substr($contentType, strpos($contentType, "boundary=") + 9);
                 $raw = file_get_contents("php://input");
                 $blocks = preg_split("/-+$boundary/", $raw);
@@ -347,7 +347,7 @@ class UserController extends AbstractController {
                 foreach ($blocks as $block) {
                     if (empty($block)) continue;
 
-                    if (strpos($block, "filename=") !== false) {
+                    if (str_contains($block, "filename=")) {
                         preg_match('/name="([^"]*)"; filename="([^"]*)"/', $block, $matches);
                         preg_match('/Content-Type: ([^\r\n]+)/', $block, $type);
                         preg_match('/\r\n\r\n(.*)\r\n$/s', $block, $body);
@@ -390,7 +390,7 @@ class UserController extends AbstractController {
 
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
 
         if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
