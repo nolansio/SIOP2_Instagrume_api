@@ -56,6 +56,15 @@ class AuthController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User is banned')
+                    ]
+                )
             )
         ]
     )]
@@ -71,7 +80,9 @@ class AuthController extends AbstractController {
 
         $entityManager = $doctrine->getManager();
         $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
-
+        if ($user->getIsBanned()) {
+            return new JsonResponse(['error'=> 'User is banned'], 403);
+        }
         $jwt = $jwtService->encodeToken([
             'username' => $user->getUsername(),
             'roles' => $user->getRoles(),
