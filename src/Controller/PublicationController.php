@@ -42,7 +42,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -84,7 +84,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -116,7 +116,6 @@ class PublicationController extends AbstractController {
         }
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
-
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -160,7 +159,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -233,7 +232,8 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
                     ]
                 )
             ),
