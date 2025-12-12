@@ -38,6 +38,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    public function isLoggable($user, $password): bool {
+        return $this->passwordHasher->isPasswordValid($user, $password);
+    }
+
+
     public function findOneByUsername($username): ?User {
         return $this->createQueryBuilder('u')
             ->andWhere('u.username = :username')

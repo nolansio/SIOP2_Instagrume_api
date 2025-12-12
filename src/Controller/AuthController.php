@@ -2,9 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
+use App\Repository\UserRepository;
 use App\Service\JWTService;
-use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -13,11 +12,19 @@ use OpenApi\Attributes as OA;
 
 class AuthController extends AbstractController {
 
+    private JWTService $jwtService;
+    private UserRepository $userRepository;
+
+    public function __construct(JWTService $jwtService, UserRepository $userRepository) {
+        $this->jwtService = $jwtService;
+        $this->userRepository = $userRepository;
+    }
+
     #[Route('/api/token', methods: ['POST'])]
     #[OA\Post(
         path: '/api/token',
-        summary: "Générer un token",
-        description: "Authentification d'un utilisateur et renvoie d'un jeton",
+        summary: "Générer un jeton d'authentification",
+        description: "Génération d'un jeton d'authentification",
         tags: ['Authentification'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -32,7 +39,7 @@ class AuthController extends AbstractController {
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Jeton généré avec succès',
+                description: "Jeton d'authentification généré avec succès",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')
@@ -50,16 +57,25 @@ class AuthController extends AbstractController {
             ),
             new OA\Response(
                 response: 401,
-                description: 'Identifiants invalides',
+                description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
+                        new OA\Property(property: 'error', type: 'string', example: "Incorrect password")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
                     ]
                 )
             )
         ]
     )]
-    public function token(Request $request, JWTService $jwtService, ManagerRegistry $doctrine): JsonResponse {
+    public function token(Request $request): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         $username = $data['username'] ?? null;
@@ -69,14 +85,21 @@ class AuthController extends AbstractController {
             return new JsonResponse(['error' => "Parameters 'username' and 'password' required"], 400);
         }
 
-        $entityManager = $doctrine->getManager();
-        $user = $entityManager->getRepository(User::class)->findOneBy(['username' => $data['username']]);
+        $user = $this->userRepository->findOneByUsername($username);
+        if (!$user) {
+            return new JsonResponse(['error' => "User not found"], 404);
+        }
 
-        $jwt = $jwtService->encodeToken([
+        if (!$this->userRepository->isLoggable($user, $password)) {
+            return new JsonResponse(['error' => "Incorrect password"], 401);
+        }
+
+        $token = $this->jwtService->encodeToken([
             'username' => $user->getUsername(),
             'roles' => $user->getRoles(),
         ]);
-        return new JsonResponse(['token' => $jwt], 200);
+
+        return new JsonResponse(['token' => $token], 200);
     }
 
 }
