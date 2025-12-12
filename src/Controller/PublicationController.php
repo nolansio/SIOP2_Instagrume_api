@@ -35,13 +35,14 @@ class PublicationController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'description', type: 'string', example: 'Je cultive moi-même mes légumes'),
+                        new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
                         new OA\Property(property: 'created_at', type: 'string', example: '2025-11-27 12:06:32'),
                         new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
                     ]
                 )
             ),
@@ -76,13 +77,14 @@ class PublicationController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'description', type: 'string', example: 'Je cultive moi-même mes légumes'),
+                        new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
                         new OA\Property(property: 'created_at', type: 'string', example: '2025-11-27 12:06:32'),
                         new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
                     ]
                 )
             ),
@@ -157,7 +159,8 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_lock', type: 'boolean', example: true)
                     ]
                 )
             ),

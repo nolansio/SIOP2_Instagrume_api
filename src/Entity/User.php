@@ -83,6 +83,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->publications = new ArrayCollection();
         $this->comments = new ArrayCollection();
         $this->images = new ArrayCollection();
+        $this->isBanned = false;
     }
 
     public function getId(): ?int
@@ -316,7 +317,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isBanned(): bool
+    public function getIsBanned(): bool
     {
         return $this->isBanned;
     }

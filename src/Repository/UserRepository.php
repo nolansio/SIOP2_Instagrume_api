@@ -104,8 +104,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function delete($user): void {
         $entityManager = $this->doctrine->getManager();
-
         $entityManager->remove($user);
+        $entityManager->flush();
+    }
+
+    public function updateIsBan($user, $value): void {
+        $entityManager = $this->doctrine->getManager();
+        $user->setIsBanned($value);
         $entityManager->flush();
     }
 
