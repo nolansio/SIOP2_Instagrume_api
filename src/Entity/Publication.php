@@ -59,12 +59,17 @@ class Publication
     #[Groups(['all', 'publication', 'user'])]
     private Collection $comments;
 
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['all', 'publication', 'user'])]
+    private bool $isLock = false;
+
     public function __construct()
     {
         $this->images = new ArrayCollection();
         $this->likes = new ArrayCollection();
         $this->dislikes = new ArrayCollection();
         $this->comments = new ArrayCollection();
+        $this->isLock = false;
     }
 
     public function getId(): ?int
@@ -227,4 +232,16 @@ class Publication
 
         return $this;
     }
+
+    public function getIsLock(): bool
+    {
+        return $this->isLock;
+    }
+
+    public function setIsLock(bool $isLock): self
+    {
+        $this->isLock = $isLock;
+        return $this;
+    }
+
 }
