@@ -72,7 +72,7 @@ class AuthController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'User is banned')
                     ]
                 )
-            )
+            ),
             new OA\Response(
                 response: 404,
                 description: 'Introuvable',
@@ -103,7 +103,7 @@ class AuthController extends AbstractController {
             return new JsonResponse(['error' => "Incorrect password"], 401);
         }
 
-        if ($user->getIsBanned()) { // TODO: Juste IsBanned() sans Get
+        if ($user->isBanned()) {
             return new JsonResponse(['error'=> 'User is banned'], 403);
         }
 

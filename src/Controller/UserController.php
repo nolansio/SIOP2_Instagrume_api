@@ -235,9 +235,9 @@ class UserController extends AbstractController {
         $user = $this->userRepository->find($id);
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
-            
+
         }
-        $data = $this->jsonConverter->encodeToJson(["value" => $user->getIsBanned()], ['user']);
+        $data = $this->jsonConverter->encodeToJson(["value" => $user->isBanned()], ['user']);
         return new JsonResponse($data, 200, [], true);
     }
 
