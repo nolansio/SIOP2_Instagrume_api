@@ -14,14 +14,12 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        public_api:
-            pattern: ^/api/doc
-            security: false
         login:
             pattern: ^/api/token
             stateless: true
-            json_login:
-                check_path: /api/token
+        public_api:
+            pattern: ^/api/doc
+            security: false
         api:
             pattern: ^/api
             stateless: true
