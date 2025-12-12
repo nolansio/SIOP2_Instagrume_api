@@ -74,7 +74,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['all', 'user'])]
-    private bool $isBanned = false;
+    private bool $isBanned;
 
     public function __construct()
     {
@@ -317,12 +317,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getIsBanned(): bool
+    public function isBanned(): bool
     {
         return $this->isBanned;
     }
 
-    public function setIsBanned(bool $isBanned): self
+    public function setBanned(bool $isBanned): self
     {
         $this->isBanned = $isBanned;
         return $this;
