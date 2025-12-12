@@ -3,41 +3,37 @@
 namespace App\Repository;
 
 use App\Entity\Comment;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Comment>
  */
-class CommentRepository extends ServiceEntityRepository
-{
-    public function __construct(ManagerRegistry $registry)
-    {
+class CommentRepository extends ServiceEntityRepository {
+
+    private ManagerRegistry $doctrine;
+
+    public function __construct(ManagerRegistry $registry, ManagerRegistry $doctrine) {
         parent::__construct($registry, Comment::class);
+        $this->doctrine = $doctrine;
     }
 
-    //    /**
-    //     * @return Comment[] Returns an array of Comment objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function create($content, $user, $publication, $original_comment): Comment {
+        $comment = new Comment();
 
-    //    public function findOneBySomeField($value): ?Comment
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        $comment->setContent($content);
+        $comment->setPublication($publication);
+        $comment->setOriginalComment($original_comment);
+        $comment->setCreatedAt(new DateTimeImmutable("now"));
+        $comment->setUser($user);
+
+        $entityManager = $this->doctrine->getManager();
+
+        $entityManager->persist($comment);
+        $entityManager->flush();
+
+        return $comment;
+    }
+
 }
