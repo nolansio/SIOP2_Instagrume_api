@@ -44,8 +44,13 @@ class PublicationRepository extends ServiceEntityRepository {
 
     public function delete($publication): void {
         $entityManager = $this->doctrine->getManager();
-
         $entityManager->remove($publication);
+        $entityManager->flush();
+    }
+
+    public function updateIsLock($publication, $value): void {
+        $entityManager = $this->doctrine->getManager();
+        $publication->setIsLock($value);
         $entityManager->flush();
     }
 

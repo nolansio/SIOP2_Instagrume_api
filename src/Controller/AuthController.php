@@ -65,6 +65,15 @@ class AuthController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User is banned')
+                    ]
+                )
+            )
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -92,6 +101,10 @@ class AuthController extends AbstractController {
 
         if (!$this->userRepository->isLoggable($user, $password)) {
             return new JsonResponse(['error' => "Incorrect password"], 401);
+        }
+
+        if ($user->getIsBanned()) { // TODO: Juste IsBanned() sans Get
+            return new JsonResponse(['error'=> 'User is banned'], 403);
         }
 
         $token = $this->jwtService->encodeToken([

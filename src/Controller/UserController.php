@@ -36,7 +36,8 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -73,7 +74,8 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -124,7 +126,8 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -192,6 +195,52 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
+    #[Route('/api/users/isBanned/{id}', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/isBanned/{id}',
+        summary: "Récupérer la valeur isBanned de l'utilisateur",
+        description: "Récupérer la valeur isBanned de l'utilisateur de l'utilisateur correspondant à l'id",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 200,
+                description: 'Réponse envoyée avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: true)
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getBanValue($id): Response {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return new JsonResponse(['error' => "User not found"], 404);
+            
+        }
+        $data = $this->jsonConverter->encodeToJson(["value" => $user->getIsBanned()], ['user']);
+        return new JsonResponse($data, 200, [], true);
+    }
+
     #[Route('/api/users', methods: ['POST'])]
     #[OA\Post(
         path: '/api/users',
@@ -220,7 +269,8 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -301,7 +351,8 @@ class UserController extends AbstractController {
                     new OA\Property(property: 'username', type: 'string', example: 'user'),
                     new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                     new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                    new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                 ]
             )
         ),
@@ -540,7 +591,8 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
