@@ -2,11 +2,9 @@
 
 namespace App\Controller;
 
-use App\Entity\Like;
 use App\Repository\LikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
-use App\Repository\UserRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
