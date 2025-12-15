@@ -23,6 +23,7 @@ security:
         api:
             pattern: ^/api
             stateless: true
+            entry_point: App\Security\JWTEntryPoint
             custom_authenticators:
                 - App\Security\JWTAuthenticator
 
