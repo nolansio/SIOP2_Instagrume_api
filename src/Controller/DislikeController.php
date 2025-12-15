@@ -80,7 +80,7 @@ class DislikeController extends AbstractController {
         }
 
         $currentUser = $this->getUser();
-        if ($this->dislikeRepository->finddislikeByUserAndPublication($currentUser, $publication)) {
+        if ($this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication)) {
             return new JsonResponse(['error' => 'You already disliked it'], 409);
         }
 
@@ -154,7 +154,7 @@ class DislikeController extends AbstractController {
         }
 
         $currentUser = $this->getUser();
-        if ($this->dislikeRepository->finddislikeByUserAndComment($currentUser, $comment)) {
+        if ($this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment)) {
             return new JsonResponse(['error' => 'You already disliked it'], 409);
         }
 
