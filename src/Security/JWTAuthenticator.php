@@ -3,7 +3,6 @@
 namespace App\Security;
 
 use App\Service\JWTService;
-use App\Entity\User;
 use App\Repository\UserRepository;
 use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,9 +35,9 @@ class JWTAuthenticator extends AbstractAuthenticator {
             if ($payload == null) {
                 throw new AuthenticationException('Invalid token');
             }
-            // Vérification du bannisemment de l'utilisateur en bdd
+
             $user = $this->userRepository->findOneByUsername($payload['username']);
-            if ($user === null || $user->getIsBanned()) {
+            if ($user === null || $user->isBanned()) {
                 throw new AuthenticationException('Invalid token');
             }
         } catch (Exception) {
