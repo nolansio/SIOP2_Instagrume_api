@@ -61,7 +61,7 @@ class Publication
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['all', 'publication', 'user'])]
-    private bool $isLock = false;
+    private bool $isLocked = false;
 
     public function __construct()
     {
@@ -69,7 +69,7 @@ class Publication
         $this->likes = new ArrayCollection();
         $this->dislikes = new ArrayCollection();
         $this->comments = new ArrayCollection();
-        $this->isLock = false;
+        $this->isLocked = false;
     }
 
     public function getId(): ?int
@@ -233,14 +233,14 @@ class Publication
         return $this;
     }
 
-    public function getIsLock(): bool
+    public function getIsLocked(): bool
     {
-        return $this->isLock;
+        return $this->isLocked;
     }
 
-    public function setIsLock(bool $isLock): self
+    public function setIsLocked(bool $isLocked): self
     {
-        $this->isLock = $isLock;
+        $this->isLocked = $isLocked;
         return $this;
     }
 

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Comment;
 use App\Repository\CommentRepository;
+use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,11 +20,14 @@ class CommentController extends AbstractController {
     private CommentRepository $commentRepository;
     private PublicationRepository $publicationRepository;
     private JsonConverter $jsonConverter;
+    private UserRepository $userRepository;
 
-    public function __construct(CommentRepository $commentRepository, JsonConverter $jsonConverter, PublicationRepository $publicationRepository) {
+
+    public function __construct(CommentRepository $commentRepository, JsonConverter $jsonConverter, PublicationRepository $publicationRepository, UserRepository $userRepository) {
         $this->commentRepository = $commentRepository;
         $this->publicationRepository = $publicationRepository;
         $this->jsonConverter = $jsonConverter;
+        $this->userRepository = $userRepository;
     }
 
     #[Route('/api/comments', methods: ['GET'])]
@@ -70,8 +74,8 @@ class CommentController extends AbstractController {
     #[Route('/api/comments/id/{id}', methods: ['GET'])]
     #[OA\Get(
         path: '/api/comments/id/{id}',
-        summary: "Récupérer une commentaire par son ID",
-        description: "Récupération d'une commentaire par son ID",
+        summary: "Récupérer un commentaire par son ID",
+        description: "Récupération d'un commentaire par son ID",
         tags: ['Commentaire'],
         responses: [
             new OA\Response(
@@ -125,8 +129,8 @@ class CommentController extends AbstractController {
     #[Route('/api/comments', methods: ['POST'])]
     #[OA\Post(
         path: '/api/comments',
-        summary: "Créer une commentaire",
-        description: "Création d'une commentaire",
+        summary: "Créer un commentaire",
+        description: "Création d'un commentaire",
         tags: ['Commentaire'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -134,7 +138,7 @@ class CommentController extends AbstractController {
                 required: ['content', 'publication_id'],
                 properties: [
                     new OA\Property(property: 'content', type: 'string', example: "Pas moi"),
-                    new OA\Property(property: 'publication_id', type: 'integer', example: 3),
+                    new OA\Property(property: 'publication_id', type: 'integer', example: 7),
                     new OA\Property(property: 'original_comment', type: 'integer', example: 1)
                 ]
             )
@@ -142,7 +146,7 @@ class CommentController extends AbstractController {
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Comment créée avec succès',
+                description: 'Commentaire créée avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 4),
@@ -173,16 +177,25 @@ class CommentController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Publication / Comment not found')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 423,
+                description: 'Publication associée verrouillée',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'This Publication is currently locked, insert a commment is not allowed')
+                    ]
+                )
             )
         ]
     )]
     public function insert(Request $request): Response {
         $data = json_decode($request->getContent(), true);
         $content = $data['content'] ?? null;
-        $publication_id = $data['publication_id'] ?? null;
-        $original_comment_id = $data['original_comment'] ?? null;
+        $publication_id = $data['publication_id'] ?? 0;
+        $original_comment_id = $data['original_comment'] ?? 0;
 
-        if (!$content || !$publication_id) {
+        if (!$content || $publication_id === 0) {
             return new JsonResponse(['error' => "Parameters 'content' and 'publication_id' required"], 400);
         }
 
@@ -195,8 +208,11 @@ class CommentController extends AbstractController {
         if ($original_comment_id) {
             $original_comment = $this->commentRepository->find($original_comment_id);
             if (!$original_comment) {
-                return new JsonResponse(['error' => "Comment not found"], 400);
+                return new JsonResponse(['error' => "Comment not found"], 404);
             }
+        }
+        if ($publication->getIsLocked() || ($original_comment && $original_comment->getPublication()->getIsLocked())) {
+            return new JsonResponse(['error' => "This Publication is currently locked, insert a commment is not allowed"], 423);
         }
 
         $comment = $this->commentRepository->create($content, $this->getUser(), $publication, $original_comment);
@@ -255,26 +271,132 @@ class CommentController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example:'You are not allowed to update this comment')
+                    ]
+                )
             )
         ]
     )]
-    public function update(Request $request, ManagerRegistry $doctrine): JsonResponse {
+    public function update(Request $request): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $id = $data['id'] ?? null;
         $content = $data['content'] ?? null;
-
         if (!$id || !$content) {
             return new JsonResponse(['error' => "Parameters 'id' and 'content' required"], 400);
         }
-
-        if (!$this->commentRepository->find($id)) {
+        $comment = $this->commentRepository->find($id);
+        if (!$comment) {
             return new JsonResponse(['error' => "Comment not found"], 404);
         }
 
-        // $user = $this->commentRepository->update($comment, $username, $password);
-        // $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
+        $user = $this->userRepository->find($comment->getUser()->getId());
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
+        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
+        
+        // AS = Auteur suppression | AC = Auteur commentaire
+        // Si :
+        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
+        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre commentaire
+        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
+            return new JsonResponse(['error' => 'You are not allowed to update this comment'], 403);
+        }
+
+        $comment = $this->commentRepository->update($comment, $content);
+        $data = $this->jsonConverter->encodeToJson($comment, ['user']);
 
         return new JsonResponse($data, 201, [], true);
+    }
+
+    #[Route('/api/comments/id/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/comments/id/{id}',
+        summary: "Supprimer un commentaire par son ID",
+        description: "Supprimer commentaire par son ID",
+        tags: ['Commentaire'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Commentaire récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'content', type: 'string', example: "J'aime bien la seconde image"),
+                        new OA\Property(property: 'created_at', type: 'string', example: '2025-12-01 11:59:33'),
+                        new OA\Property(property: 'original_comment', type: 'string', example: null),
+                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: [])
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example:'You are not allowed to delete this comment')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Comment not found')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function delete($id): Response {
+        if (!$id) {
+            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+        }
+
+        $comment = $this->commentRepository->find($id);
+        if (!$comment) {
+            return new JsonResponse(['error' => "Comment not found"], 404);
+        }
+        $user = $this->userRepository->find($comment->getUser()->getId());
+        $currentUser = $this->getUser();
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
+        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
+        
+        // AS = Auteur suppression | AC = Auteur commentaire
+        // Si :
+        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
+        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre commentaire
+        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
+            return new JsonResponse(['error' => 'You are not allowed to delete this comment'], 403);
+        }
+
+        $this->commentRepository->delete($comment);
+
+        return new JsonResponse([], 200);
     }
 
 }

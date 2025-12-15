@@ -14,8 +14,8 @@ class CommentRepository extends ServiceEntityRepository {
 
     private ManagerRegistry $doctrine;
 
-    public function __construct(ManagerRegistry $registry, ManagerRegistry $doctrine) {
-        parent::__construct($registry, Comment::class);
+    public function __construct(ManagerRegistry $doctrine) {
+        parent::__construct($doctrine, Comment::class);
         $this->doctrine = $doctrine;
     }
 
@@ -27,12 +27,25 @@ class CommentRepository extends ServiceEntityRepository {
         $comment->setOriginalComment($original_comment);
         $comment->setCreatedAt(new DateTimeImmutable("now"));
         $comment->setUser($user);
-
         $entityManager = $this->doctrine->getManager();
-
         $entityManager->persist($comment);
         $entityManager->flush();
 
+        return $comment;
+    }
+
+    public function update($comment, $content): Comment {
+        $comment->setContent($content);
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->persist($comment);
+        $entityManager->flush();
+        return $comment;
+    }
+
+    public function delete($comment): Comment {
+        $entityManager = $this->doctrine->getManager();
+        $entityManager->remove($comment);
+        $entityManager->flush();
         return $comment;
     }
 

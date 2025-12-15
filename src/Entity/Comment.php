@@ -108,8 +108,6 @@ class Comment
     public function setOriginalComment(?self $original_comment): static
     {
         $this->original_comment = $original_comment;
-        $this->setPublication($original_comment->getPublication());
-
         return $this;
     }
 

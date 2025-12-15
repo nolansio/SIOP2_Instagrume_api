@@ -48,9 +48,9 @@ class PublicationRepository extends ServiceEntityRepository {
         $entityManager->flush();
     }
 
-    public function updateIsLock($publication, $value): void {
+    public function updateIsLocked($publication, $value): void {
         $entityManager = $this->doctrine->getManager();
-        $publication->setIsLock($value);
+        $publication->setIsLocked($value);
         $entityManager->flush();
     }
 
