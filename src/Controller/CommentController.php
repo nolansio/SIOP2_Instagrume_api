@@ -211,7 +211,7 @@ class CommentController extends AbstractController {
                 return new JsonResponse(['error' => "Comment not found"], 404);
             }
         }
-        if ($publication->getIsLocked() || ($original_comment && $original_comment->getPublication()->getIsLocked())) {
+        if ($publication->isLocked() || ($original_comment && $original_comment->getPublication()->isLocked())) {
             return new JsonResponse(['error' => "This Publication is currently locked, insert a commment is not allowed"], 423);
         }
 
@@ -302,7 +302,7 @@ class CommentController extends AbstractController {
         $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
         $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
         $userIsMod = in_array('ROLE_MOD', $user->getRoles());
-        
+
         // AS = Auteur suppression | AC = Auteur commentaire
         // Si :
         // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
@@ -385,7 +385,7 @@ class CommentController extends AbstractController {
         $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
         $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
         $userIsMod = in_array('ROLE_MOD', $user->getRoles());
-        
+
         // AS = Auteur suppression | AC = Auteur commentaire
         // Si :
         // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
