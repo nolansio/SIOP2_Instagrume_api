@@ -195,12 +195,9 @@ class UserController extends AbstractController {
     )]
     public function getIsBannedById($id): JsonResponse {
         $user = $this->userRepository->find($id);
-
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
-
         }
-
         $data = $this->jsonConverter->encodeToJson(["value" => $user->isBanned()]);
         return new JsonResponse($data, 200, [], true);
     }

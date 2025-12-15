@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\Publication;
+use App\Entity\User;
 use App\Repository\PublicationRepository;
+use App\Repository\UserRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,10 +19,12 @@ class PublicationController extends AbstractController {
 
     private PublicationRepository $publicationRepository;
     private JsonConverter $jsonConverter;
+    private userRepository $userRepository;
 
-    public function __construct(PublicationRepository $publicationRepository, JsonConverter $jsonConverter) {
+    public function __construct(PublicationRepository $publicationRepository, JsonConverter $jsonConverter, UserRepository $userRepository) {
         $this->publicationRepository = $publicationRepository;
         $this->jsonConverter = $jsonConverter;
+        $this->userRepository = $userRepository;
     }
 
     #[Route('/api/publications', methods: ['GET'])]
@@ -43,7 +47,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
+                        new OA\Property(property: 'is_locked', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -85,7 +89,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
+                        new OA\Property(property: 'is_locked', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -160,7 +164,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
+                        new OA\Property(property: 'is_locked', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -234,7 +238,7 @@ class PublicationController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_lock', type: 'boolean', example: false)
+                        new OA\Property(property: 'is_locked', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -253,6 +257,15 @@ class PublicationController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to update this publication')
                     ]
                 )
             )
@@ -279,6 +292,17 @@ class PublicationController extends AbstractController {
             if (!$publication) {
                 return new JsonResponse(["error" =>"publication not found"], 404);
             }
+
+            $user = $this->userRepository->find($publication->user_id);
+            $currentUser = $this->getUser();
+            $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+            // Si :
+            // L'Auteur de la modification n'est pas l'Auteur de la publication
+            if (!$isCurrentUser) {
+                return new JsonResponse(['error' => 'You are not allowed to update this publication'], 403);
+            }
+
+
             $publication->setDescription($description);
             $entityManager->persist($publication);
             $entityManager->flush();
@@ -350,11 +374,19 @@ class PublicationController extends AbstractController {
             return new JsonResponse(['error' => "Publication not found"], 404);
         }
 
+        $user = $this->userRepository->find($publication->user_id);
         $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $publication->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
+        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
+        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
+        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
 
-        if (!$isCurrentUser && !$isMod) {
+        // AS = Auteur suppression | AP = Auteur publication
+        // Si :
+        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
+        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre publication
+        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
             return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
         }
 

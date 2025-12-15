@@ -3,6 +3,8 @@
 namespace App\Security;
 
 use App\Service\JWTService;
+use App\Entity\User;
+use App\Repository\UserRepository;
 use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,9 +17,11 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 class JWTAuthenticator extends AbstractAuthenticator {
 
     private JWTService $jwtManager;
+    private UserRepository $userRepository;
 
-    public function __construct(JWTService $jwtManager) {
+    public function __construct(JWTService $jwtManager, UserRepository $userRepository) {
         $this->jwtManager = $jwtManager;
+        $this->userRepository = $userRepository;
     }
 
     public function supports(Request $request): ?bool {
@@ -30,6 +34,11 @@ class JWTAuthenticator extends AbstractAuthenticator {
         try {
             $payload = $this->jwtManager->decodeToken($token);
             if ($payload == null) {
+                throw new AuthenticationException('Invalid token');
+            }
+            // Vérification du bannisemment de l'utilisateur en bdd
+            $user = $this->userRepository->findOneByUsername($payload['username']);
+            if ($user === null || $user->getIsBanned()) {
                 throw new AuthenticationException('Invalid token');
             }
         } catch (Exception) {

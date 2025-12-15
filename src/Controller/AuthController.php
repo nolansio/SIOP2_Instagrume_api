@@ -109,7 +109,7 @@ class AuthController extends AbstractController {
 
         $token = $this->jwtService->encodeToken([
             'username' => $user->getUsername(),
-            'roles' => $user->getRoles(),
+            'roles' => $user->getRoles()
         ]);
 
         return new JsonResponse(['token' => $token], 200);
