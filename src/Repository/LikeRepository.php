@@ -3,6 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\Like;
+use App\Entity\User;
+use App\Entity\Publication;
+use App\Entity\Comment;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -28,6 +31,27 @@ class LikeRepository extends ServiceEntityRepository
         $entityManager->remove($like);
         $entityManager->flush();
         return $like;
+    }
+
+    public function findLikeByUserAndPublication(User $user, Publication $publication): ?Like {
+        return $this->createQueryBuilder('l')
+        ->andWhere('l.user = :user_id')
+        ->setParameter('user_id', $user->getId())
+        ->andWhere('l.publication = :publication_id')
+        ->setParameter('publication_id', $publication->getId())
+        ->getQuery()
+        ->getOneOrNullResult();
+    }
+
+
+    public function findLikeByUserAndComment(User $user, Comment $comment): ?Like {
+        return $this->createQueryBuilder('l')
+        ->andWhere('l.user = :user_id')
+        ->setParameter('user_id', $user->getId())
+        ->andWhere('l.comment = :comment_id')
+        ->setParameter('comment_id', $comment->getId())
+        ->getQuery()
+        ->getOneOrNullResult();
     }
 //    /**
 //     * @return Like[] Returns an array of Like objects

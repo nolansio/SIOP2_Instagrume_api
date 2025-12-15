@@ -74,6 +74,24 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this like')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
+                    ]
+                )
+                    ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflit',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
+                    ]
+                )
             )
         ]
     )]
@@ -85,16 +103,18 @@ class LikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameter 'publication_id' required"], 400);
         }
         if (!$this->publicationRepository->find($publication_id)) {
-            return new JsonResponse(['error' => "Publication not exists"], 409);
+            return new JsonResponse(['error' => "Publication not found"], 404);
         }
 
         $publication = $this->publicationRepository->find($publication_id);
-        $author = $publication->getUser();
         $currentUser = $this->getUser();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$author && !$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this like'], 403);
+        $userAlreadyLikedPublication = $this->likeRepository->findLikeByUserAndPublication($currentUser, $publication);
+        if ($userAlreadyLikedPublication) {
+            return new JsonResponse(['error' => "You already liked it"], 409);
+        }
+        $author = $publication->getUser();
+        if (!$author) {
+            return new JsonResponse(['error' => 'You are not allowed to add this like'], 403);
         }
 
         $like = new Like();
@@ -159,6 +179,24 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this like')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Comment not found')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflit',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
+                    ]
+                )
             )
         ]
     )]
@@ -170,20 +208,22 @@ class LikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameter 'commentaire_id' required"], 400);
         }
         if (!$this->commentRepository->find($commentaire_id)) {
-            return new JsonResponse(['error' => "Commentaire not exists"], 409);
+            return new JsonResponse(['error' => "Comment not found"], 404);
         }
 
-        $commentaire = $this->commentRepository->find($commentaire_id);
-        $author = $commentaire->getUser();
+        $comment = $this->commentRepository->find($commentaire_id);
         $currentUser = $this->getUser();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$author && !$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this like'], 403);
+        $userAlreadyLikedComment = $this->likeRepository->findLikeByUserAndComment($currentUser, $comment);
+        if ($userAlreadyLikedComment) {
+            return new JsonResponse(['error' => "You already liked it"], 409);
+        }
+        $author = $comment->getUser();
+        if (!$author) {
+            return new JsonResponse(['error' => 'You are not allowed to add this like'], 403);
         }
 
         $like = new Like();
-        $like->setComment($commentaire);
+        $like->setComment($comment);
         $like->setUser($currentUser);
         $this->likeRepository->create($like);
         $data = $this->jsonConverter->encodeToJson($like, ['all']);
@@ -245,14 +285,10 @@ class LikeController extends AbstractController {
         $author = $like->getUser();
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $author->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$isCurrentUser && !$isMod) {
+        if (!$isCurrentUser) {
             return new JsonResponse(['error' => 'You are not allowed to delete this like'], 403);
         }
-
         $this->likeRepository->delete($like);
-
         return new JsonResponse([], 200);
     }
 
