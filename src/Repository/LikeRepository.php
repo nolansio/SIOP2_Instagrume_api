@@ -6,21 +6,27 @@ use App\Entity\Like;
 use App\Entity\User;
 use App\Entity\Publication;
 use App\Entity\Comment;
+use Cassandra\Tuple;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Like>
  */
-class LikeRepository extends ServiceEntityRepository
-{
-    public function __construct(private ManagerRegistry $doctrine)
-    {
+class LikeRepository extends ServiceEntityRepository {
+
+    public function __construct(private ManagerRegistry $doctrine) {
         parent::__construct($doctrine, Like::class);
     }
 
-    public function create($like): Like {
+    public function create(?User $user, ?Publication $publication, ?Comment $comment): Like {
         $entityManager = $this->doctrine->getManager();
+
+        $like = new Like();
+        $like->setUser($user);
+        $like->setPublication($publication);
+        $like->setComment($comment);
+
         $entityManager->persist($like);
         $entityManager->flush();
         return $like;
@@ -33,7 +39,7 @@ class LikeRepository extends ServiceEntityRepository
         return $like;
     }
 
-    public function findLikeByUserAndPublication(User $user, Publication $publication): ?Like {
+    public function findLikeByUserAndPublication(?User $user, Publication $publication): ?Like {
         return $this->createQueryBuilder('l')
         ->andWhere('l.user = :user_id')
         ->setParameter('user_id', $user->getId())
@@ -44,7 +50,7 @@ class LikeRepository extends ServiceEntityRepository
     }
 
 
-    public function findLikeByUserAndComment(User $user, Comment $comment): ?Like {
+    public function findLikeByUserAndComment(?User $user, Comment $comment): ?Like {
         return $this->createQueryBuilder('l')
         ->andWhere('l.user = :user_id')
         ->setParameter('user_id', $user->getId())
