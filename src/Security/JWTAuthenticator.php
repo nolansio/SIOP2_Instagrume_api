@@ -38,7 +38,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
             }
             // Vérification du bannisemment de l'utilisateur en bdd
             $user = $this->userRepository->findOneByUsername($payload['username']);
-            if ($user === null || $user->getIsBanned()) {
+            if ($user === null || $user->isBanned()) {
                 throw new AuthenticationException('Invalid token');
             }
         } catch (Exception) {

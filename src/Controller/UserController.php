@@ -166,42 +166,6 @@ class UserController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/users/isbanned/{id}', methods: ['GET'])]
-    #[OA\Get(
-        path: '/api/users/isbanned/{id}',
-        summary: "Récupérer si l'utilisateur est banni par son ID",
-        description: "Récupération de si l'utilisateur est banni par son ID",
-        tags: ['Utilisateur'],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Réponse envoyée avec succès',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'value', type: 'string', example: false)
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 404,
-                description: 'Introuvable',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
-                    ]
-                )
-            )
-        ]
-    )]
-    public function getIsBannedById($id): JsonResponse {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return new JsonResponse(['error' => "User not found"], 404);
-        }
-        $data = $this->jsonConverter->encodeToJson(["value" => $user->isBanned()]);
-        return new JsonResponse($data, 200, [], true);
-    }
-
     #[Route('/api/users', methods: ['POST'])]
     #[OA\Post(
         path: '/api/users',
