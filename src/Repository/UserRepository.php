@@ -69,7 +69,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return array_column($results, 'username');
     }
 
-    public function updateAvatar($user, $avatar): bool {
+    public function updateAvatar($user, UploadedFile $avatar): bool {
         $uploadDir = '../public/images/';
         $fileExt = strtolower($avatar->getClientOriginalExtension());
 
@@ -80,26 +80,30 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $uniqueName = 'imgAvatar_'.$user->getUsername().'_'.uniqid().'.'.$fileExt;
         $destPath = $uploadDir.$uniqueName;
 
-        if (!ImageService::compressAndResizeImage($avatar['tmp_name'], $destPath, 800, 800, 75)) {
+        if (!ImageService::compressAndResizeImage($avatar->getPathname(), $destPath, 800, 800, 75)) {
             return false;
         }
 
         $entityManager = $this->doctrine->getManager();
 
-        $currentImg = $this->imageRepository->findBy(array('user' => $user));
+        $currentImg = $this->imageRepository->findBy(['user' => $user]);
         $newImg = new Image();
 
-        if (!empty($currentImg)) {
+        if ($currentImg) {
             $currentImg = $currentImg[0];
-            unlink($currentImg->getUrl());
+
+            if (file_exists($currentImg->getUrl())) {
+                unlink($currentImg->getUrl());
+            }
+
             $currentImg->setUrl($destPath);
             $entityManager->persist($currentImg);
-        } else {
-            $newImg->setUrl($destPath);
-            $newImg->setDescription($user->getUsername());
-            $newImg->setUser($user);
-            $entityManager->persist($newImg);
         }
+
+        $newImg->setUrl(str_replace('../public', '', $destPath));
+        $newImg->setDescription($user->getUsername());
+        $newImg->setUser($user);
+        $entityManager->persist($newImg);
 
         $entityManager->flush();
         return true;
