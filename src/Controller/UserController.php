@@ -440,7 +440,7 @@ class UserController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' is required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
                     ]
                 )
             ),
@@ -475,7 +475,7 @@ class UserController extends AbstractController {
     )]
     public function delete($id): JsonResponse {
         if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+            return new JsonResponse(['error' => "Parameters 'id' required"], 400);
         }
 
         $user = $this->userRepository->find($id);
