@@ -3,8 +3,6 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
-use App\Service\ImageService;
-use App\Entity\Image;
 use App\Repository\ImageRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,7 +10,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
-use Doctrine\Persistence\ManagerRegistry;
 
 
 class UserController extends AbstractController {
