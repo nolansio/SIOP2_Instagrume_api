@@ -26,6 +26,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
 
     public function authenticate(Request $request): Passport {
         $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+
         try {
             $payload = $this->jwtManager->decodeToken($token);
             if ($payload == null) {
