@@ -2,8 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Publication;
-use App\Entity\User;
 use App\Repository\PublicationRepository;
 use App\Repository\UserRepository;
 use App\Service\JsonConverter;
@@ -56,16 +54,16 @@ class PublicationController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
                     ]
                 )
             )
         ]
     )]
-    public function getAll(): Response {
+    public function getAll(): JsonResponse {
         $publications = $this->publicationRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($publications, ['publication']);
 
+        $data = $this->jsonConverter->encodeToJson($publications, ['publication']);
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -98,7 +96,7 @@ class PublicationController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
                     ]
                 )
             ),
@@ -113,7 +111,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function get($id): Response {
+    public function get($id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -140,11 +138,7 @@ class PublicationController extends AbstractController {
                         required: ['description', 'images'],
                         properties: [
                             new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes'),
-                            new OA\Property(
-                                property: 'images',
-                                type: 'array',
-                                items: new OA\Items(type: 'string', format: 'binary')
-                            )
+                            new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'string', format: 'binary'))
                         ]
                     )
                 )
@@ -188,7 +182,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function insert(Request $request): Response {
+    public function insert(Request $request): JsonResponse {
         $description = $request->request->get('description');
         $images = $request->files->get('images', []);
 
@@ -221,13 +215,23 @@ class PublicationController extends AbstractController {
     #[Route('/api/publications', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/publications',
-        summary: "Modifier la description d'une publication",
-        description: "Modifier la description d'une publication",
+        summary: "Modifier une publication",
+        description: "Modification d'une publication",
         tags: ['Publication'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['id', 'description'],
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer', example: 1),
+                    new OA\Property(property: 'description', type: 'string', example: 'Cultivation de mes plantes !')
+                ]
+            )
+        ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Publication créée avec succès',
+                description: 'Publication modifiée avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -247,7 +251,7 @@ class PublicationController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id' and 'description' required")
                     ]
                 )
             ),
@@ -271,45 +275,32 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    #[OA\RequestBody(
-        required: true,
-        content: new OA\JsonContent(
-            type: Publication::class,
-            example: [
-                "id" => 7,
-                "description"=> "Abra exemple"
-            ]
-        )
-    )]
-    public function update(Request $request, ManagerRegistry $doctrine): JsonResponse {
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        if (!empty($data["description"]) && !empty($data["id"])) {
-            $entityManager = $doctrine->getManager();
-            $description = $data["description"];
-            $id = $data["id"];
-            $publication = $this->publicationRepository->find($id);
-            if (!$publication) {
-                return new JsonResponse(["error" =>"publication not found"], 404);
-            }
+    public function update(Request $request): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+        $id = $data['id'] ?? null;
+        $description = $data['description'] ?? null;
 
-            $user = $this->userRepository->find($publication->user_id);
-            $currentUser = $this->getUser();
-            $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-            // Si :
-            // L'Auteur de la modification n'est pas l'Auteur de la publication
-            if (!$isCurrentUser) {
-                return new JsonResponse(['error' => 'You are not allowed to update this publication'], 403);
-            }
-
-
-            $publication->setDescription($description);
-            $entityManager->persist($publication);
-            $entityManager->flush();
-            return new JsonResponse($this->jsonConverter->encodeToJson($publication), 200, [], true);
-        } else {
-            return new JsonResponse(["error" =>"bad fields"], 422);
+        if (!$id || !$description) {
+            return new JsonResponse(['error' => "Parameters 'id' and 'description' required"], 400);
         }
+
+        $publication = $this->publicationRepository->find($id);
+        if (!$publication) {
+            return new JsonResponse(['error' =>'Publication not found'], 404);
+        }
+
+        $currentUser = $this->getUser();
+        $isPublicationUser = $currentUser->getUserIdentifier() === $publication->getUser()->getUserIdentifier();
+        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
+
+        if (!$isPublicationUser && !$isMod) {
+            return new JsonResponse(['error' => 'You are not allowed to update this publication'], 403);
+        }
+
+        $this->publicationRepository->update($publication, $description);
+
+        $data = $this->jsonConverter->encodeToJson($publication, ['user']);
+        return new JsonResponse($data, 200, [], true);
     }
 
     #[Route('/api/publications/id/{id}', methods: ['DELETE'])]
@@ -331,7 +322,7 @@ class PublicationController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "'Parameters 'id' is required'")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id' required")
                     ]
                 )
             ),
@@ -364,9 +355,9 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): Response {
+    public function delete($id): JsonResponse {
         if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
+            return new JsonResponse(['error' => "Parameters 'id' required"], 400);
         }
 
         $publication = $this->publicationRepository->find($id);
