@@ -585,8 +585,8 @@ class UserController extends AbstractController {
     )]
     public function myself(): JsonResponse {
         $user = $this->getUser();
-        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
         return new JsonResponse($data, 200, [], true);
     }
 
