@@ -18,7 +18,14 @@ use Doctrine\Persistence\ManagerRegistry;
 
 class UserController extends AbstractController {
 
-    public function __construct(private UserRepository $userRepository, private JsonConverter $jsonConverter, private ImageRepository $imageRepository) {
+    private JsonConverter $jsonConverter;
+    private UserRepository $userRepository;
+    private ImageRepository $imageRepository;
+
+    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository, ImageRepository $imageRepository) {
+        $this->jsonConverter = $jsonConverter;
+        $this->userRepository = $userRepository;
+        $this->imageRepository = $imageRepository;
     }
 
     #[Route('/api/users', methods: ['GET'])]
@@ -40,19 +47,10 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
-            ),
-            new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
             )
         ]
     )]
-    public function getAll(): Response {
+    public function getAll(): JsonResponse {
         $users = $this->userRepository->findAll();
         $data = $this->jsonConverter->encodeToJson($users, ['user']);
 
@@ -80,15 +78,6 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
-            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -99,7 +88,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getById($id): Response {
+    public function getById($id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -132,15 +121,6 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
-            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -151,7 +131,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getByUsername($username): Response {
+    public function getByUsername($username): JsonResponse {
         $user = $this->userRepository->findOneByUsername($username);
 
         if (!$user) {
@@ -176,47 +156,29 @@ class UserController extends AbstractController {
                 content: new OA\JsonContent(
                     example: ['admin', 'albert', 'moderator']
                 )
-            ),
-            new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
             )
         ]
     )]
-    public function getUsernamesByUsername($username): Response {
+    public function getUsernamesByUsername($username): JsonResponse {
         $usernames = $this->userRepository->findUsernamesByUsername($username);
         $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
 
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/users/isBanned/{id}', methods: ['GET'])]
+    #[Route('/api/users/isbanned/{id}', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/users/isBanned/{id}',
-        summary: "Récupérer la valeur isBanned de l'utilisateur",
-        description: "Récupérer la valeur isBanned de l'utilisateur de l'utilisateur correspondant à l'id",
+        path: '/api/users/isbanned/{id}',
+        summary: "Récupérer si l'utilisateur est banni par son ID",
+        description: "Récupération de si l'utilisateur est banni par son ID",
         tags: ['Utilisateur'],
         responses: [
-            new OA\Response(
-                response: 401,
-                description: 'Non autorisé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
             new OA\Response(
                 response: 200,
                 description: 'Réponse envoyée avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: true)
+                        new OA\Property(property: 'value', type: 'string', example: false)
                     ]
                 )
             ),
@@ -231,12 +193,12 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getBanValue($id): Response {
+    public function getIsBannedById($id): JsonResponse {
         $user = $this->userRepository->find($id);
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
         }
-        $data = $this->jsonConverter->encodeToJson(["value" => $user->getIsBanned()], ['user']);
+        $data = $this->jsonConverter->encodeToJson(["value" => $user->isBanned()]);
         return new JsonResponse($data, 200, [], true);
     }
 
