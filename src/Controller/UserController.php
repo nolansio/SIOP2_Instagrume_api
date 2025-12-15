@@ -10,7 +10,6 @@ use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 use Doctrine\Persistence\ManagerRegistry;
@@ -47,13 +46,22 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
             )
         ]
     )]
     public function getAll(): JsonResponse {
         $users = $this->userRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($users, ['user']);
 
+        $data = $this->jsonConverter->encodeToJson($users, ['user']);
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -78,6 +86,15 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -96,7 +113,6 @@ class UserController extends AbstractController {
         }
 
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
-
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -121,6 +137,15 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -139,7 +164,6 @@ class UserController extends AbstractController {
         }
 
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
-
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -156,13 +180,22 @@ class UserController extends AbstractController {
                 content: new OA\JsonContent(
                     example: ['admin', 'albert', 'moderator']
                 )
-            )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
+            ),
         ]
     )]
     public function getUsernamesByUsername($username): JsonResponse {
         $usernames = $this->userRepository->findUsernamesByUsername($username);
-        $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
 
+        $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -179,6 +212,15 @@ class UserController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'value', type: 'string', example: false)
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
                     ]
                 )
             ),
@@ -252,13 +294,22 @@ class UserController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflit',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Username already exists")
                     ]
                 )
             )
         ]
     )]
-    public function insert(Request $request): Response {
+    public function insert(Request $request): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $username = $data['username'] ?? null;
         $password = $data['password'] ?? null;
@@ -272,8 +323,8 @@ class UserController extends AbstractController {
         }
 
         $user = $this->userRepository->create($username, $password);
-        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 
+        $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
         return new JsonResponse($data, 201, [], true);
     }
 
@@ -291,15 +342,10 @@ class UserController extends AbstractController {
                     schema: new OA\Schema(
                     required: ["id"],
                     properties: [
-                        new OA\Property(
-                            property: "profil",
-                            type: "string",
-                            format: "binary",
-                            description: "Image de profil à téléverser"
-                        ),
                         new OA\Property(property: 'id', type: 'integer', example: "1"),
                         new OA\Property(property: 'username', type: 'string', example: "user"),
-                        new OA\Property(property: 'password', type: 'string', example: "password")
+                        new OA\Property(property: 'password', type: 'string', example: "password"),
+                        new OA\Property(property: "avatar", type: "string", format: "binary")
                     ]
                 )
             )
@@ -349,7 +395,7 @@ class UserController extends AbstractController {
         )
     ]
     )]
-    public function update(Request $request, ManagerRegistry $doctrine): Response {
+    public function update(Request $request): JsonResponse {
         // === Fix PUT + multipart ===
         if ($request->getMethod() === 'PUT') {
             $contentType = $request->headers->get('Content-Type');
@@ -392,75 +438,42 @@ class UserController extends AbstractController {
         $id = $request->request->get('id');
         $username = $request->request->get('username');
         $password = $request->request->get('password');
+        $avatar   = $request->files->get('avatar');
 
         if (!$id) {
             return new JsonResponse(['error' => "Parameter 'id' required"], 400);
         }
 
         $user = $this->userRepository->find($id);
-
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
         }
 
         $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
+        $isCurrentUser = $currentUser->getUserIdentifier() === $user->getUserIdentifier();
         $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
 
         if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to update this user'], 403);
         }
 
-        if (!empty($username)) {
+        if ($username) {
             $user = $this->userRepository->updateUsername($username, $user);
         }
-        if (!empty($password)) {
+        if ($password) {
             $user = $this->userRepository->updatePassword($password, $user);
         }
-        if (isset($_FILES['profil'])) {
-            $profil = $_FILES['profil'];
-            $uploadDir = '../public/images/';
-
-            $fileTmpPath = $profil['tmp_name'];
-            $fileName = $profil['name'];
-            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-
-            if (!in_array($fileExt, $allowedTypes)) {
-                return new JsonResponse("Bad image extension", 404);
+        if ($avatar) {
+            $isFormatOk = $this->userRepository->updateAvatar($this->getUser(), $avatar);
+            if (!$isFormatOk) {
+                return new JsonResponse(['error' => "Bad image extension"], 415);
             }
-
-            $uniqueName = 'imgAvatar_' . $user->getUsername() . '_' . uniqid() . '.' . $fileExt;
-            $destPath = $uploadDir . $uniqueName;
-            if (ImageService::compressAndResizeImage($fileTmpPath, $destPath, 800, 800, 75)) {
-                $entityManager = $doctrine->getManager();
-
-                $currentImg = $this->imageRepository->findBy(array('user' => $user));
-                $newImg = new Image();
-                if (!empty($currentImg)) {
-                    $currentImg = $currentImg[0];
-                    unlink($currentImg->getUrl());
-                    $currentImg->setUrl($destPath);
-                    $entityManager->persist($currentImg);
-                } else {
-                    $newImg->setUrl($destPath);
-                    $newImg->setDescription($user->getUsername());
-                    $newImg->setUser($user);
-                    $entityManager->persist($newImg);
-                }
-                $entityManager->flush();
-
-            } else {
-                return new JsonResponse("Bad image extension", 404);
-            }
-
-            return new JsonResponse($profil, 200);
-
         }
+
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
         return new JsonResponse($data, 200, [], true);
     }
+
 
     #[Route('/api/users/id/{id}', methods: ['DELETE'])]
     #[OA\Delete(
@@ -481,7 +494,7 @@ class UserController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "'Parameters 'id' is required'")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' is required")
                     ]
                 )
             ),
@@ -514,7 +527,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): Response {
+    public function delete($id): JsonResponse {
         if (!$id) {
             return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
         }
@@ -533,7 +546,6 @@ class UserController extends AbstractController {
         }
 
         $this->userRepository->delete($user);
-
         return new JsonResponse([], 200);
     }
 
@@ -561,15 +573,6 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Can't use 2 parameters. Only 1 or 0 is allowed")
-                    ]
-                )
-            ),
-            new OA\Response(
                 response: 401,
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
@@ -580,7 +583,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function myself(): Response {
+    public function myself(): JsonResponse {
         $user = $this->getUser();
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'private_user']);
 

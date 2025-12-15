@@ -2,10 +2,13 @@
 
 namespace App\Repository;
 
+use App\Entity\Image;
 use App\Entity\User;
 
+use App\Service\ImageService;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -18,11 +21,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     private ManagerRegistry $doctrine;
     private UserPasswordHasherInterface $passwordHasher;
+    private ImageRepository $imageRepository;
 
-    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher) {
+    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher, ImageRepository $imageRepository) {
         parent::__construct($doctrine, User::class);
         $this->doctrine = $doctrine;
         $this->passwordHasher = $passwordHasher;
+        $this->imageRepository = $imageRepository;
     }
 
     /**
@@ -62,6 +67,42 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         ;
 
         return array_column($results, 'username');
+    }
+
+    public function updateAvatar($user, $avatar): bool {
+        $uploadDir = '../public/images/';
+        $fileExt = strtolower($avatar->getClientOriginalExtension());
+
+        if (!in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif'])) {
+            return false;
+        }
+
+        $uniqueName = 'imgAvatar_'.$user->getUsername().'_'.uniqid().'.'.$fileExt;
+        $destPath = $uploadDir.$uniqueName;
+
+        if (!ImageService::compressAndResizeImage($avatar['tmp_name'], $destPath, 800, 800, 75)) {
+            return false;
+        }
+
+        $entityManager = $this->doctrine->getManager();
+
+        $currentImg = $this->imageRepository->findBy(array('user' => $user));
+        $newImg = new Image();
+
+        if (!empty($currentImg)) {
+            $currentImg = $currentImg[0];
+            unlink($currentImg->getUrl());
+            $currentImg->setUrl($destPath);
+            $entityManager->persist($currentImg);
+        } else {
+            $newImg->setUrl($destPath);
+            $newImg->setDescription($user->getUsername());
+            $newImg->setUser($user);
+            $entityManager->persist($newImg);
+        }
+
+        $entityManager->flush();
+        return true;
     }
 
     public function create($username, $password): User {
