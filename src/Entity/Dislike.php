@@ -18,7 +18,7 @@ class Dislike
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['private_dislike'])]
+    #[Groups(['all', 'publication'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
@@ -28,7 +28,7 @@ class Dislike
 
     #[ORM\ManyToOne(inversedBy: 'dislikes')]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
-    #[Groups(['all', 'publication'])]
+    #[Groups(['all', 'publication', 'user'])]
     private ?Comment $comment = null;
 
     public function getId(): ?int
