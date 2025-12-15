@@ -365,7 +365,7 @@ class PublicationController extends AbstractController {
             return new JsonResponse(['error' => "Publication not found"], 404);
         }
 
-        $user = $this->userRepository->find($publication->user_id);
+        $user = $this->userRepository->find($publication->getUser());
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
         $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
