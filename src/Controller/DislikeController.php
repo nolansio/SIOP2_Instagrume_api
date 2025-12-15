@@ -2,58 +2,44 @@
 
 namespace App\Controller;
 
-use App\Entity\Dislike;
-use App\Repository\DislikeRepository;
+use App\Repository\dislikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
-use App\Repository\UserRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
 class DislikeController extends AbstractController {
 
-    public function __construct(private UserRepository $userRepository, private JsonConverter $jsonConverter, private DislikeRepository $dislikeRepository, private PublicationRepository $publicationRepository, private CommentRepository $commentRepository) {
+    private JsonConverter $jsonConverter;
+    private PublicationRepository $publicationRepository;
+    private DislikeRepository $dislikeRepository;
+    private CommentRepository $commentRepository;
+
+    public function __construct(JsonConverter $jsonConverter, DislikeRepository $dislikeRepository, PublicationRepository $publicationRepository, CommentRepository $commentRepository) {
+        $this->jsonConverter = $jsonConverter;
+        $this->publicationRepository = $publicationRepository;
+        $this->dislikeRepository = $dislikeRepository;
+        $this->commentRepository = $commentRepository;
     }
 
-    #[Route('/api/dislike/publication', methods: ['POST'])]
+    #[Route('/api/dislikes/publication/id/{id}', methods: ['POST'])]
     #[OA\Post(
-        path: '/api/dislike/publication',
-        summary: "Ajoute un dislike à une publication",
-        description: "Ajoute un dislike à une publication",
+        path: '/api/dislikes/publication/id/{id}',
+        summary: "Ajouter un dislike à une publication",
+        description: "Ajout d'un dislike à une publication",
         tags: ['Dislike'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['publication_id'],
-                properties: [
-                    new OA\Property(property: 'publication_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Dislike créé avec succès',
+                description: 'Dislike ajouté avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 7),
-                        new OA\Property(property: 'user', type: 'user object', example: 'user'),
-                        new OA\Property(property: 'publication', type: 'publication object', example: "publication object"),
-                        new OA\Property(property: 'comment', type: 'comment object', example: "publication object")
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'publication_id' required")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'publication', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -63,15 +49,6 @@ class DislikeController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this dislike')
                     ]
                 )
             ),
@@ -83,7 +60,7 @@ class DislikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
                     ]
                 )
-                    ),
+            ),
             new OA\Response(
                 response: 409,
                 description: 'Conflit',
@@ -95,61 +72,39 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function insertIntoPublication(Request $request): Response {
-        $data = json_decode($request->getContent(), true);
-        $publication_id = $data['publication_id'] ?? null;
+    public function dislikePublication($id): JsonResponse {
+        $publication = $this->publicationRepository->find($id);
 
-        if (!$publication_id) {
-            return new JsonResponse(['error' => "Parameter 'publication_id' required"], 400);
-        }
-        if (!$this->publicationRepository->find($publication_id)) {
-            return new JsonResponse(['error' => "Publication not found"], 409);
+        if (!$publication) {
+            return new JsonResponse(['error' => 'Publication not found'], 404);
         }
 
-        $publication = $this->publicationRepository->find($publication_id);
         $currentUser = $this->getUser();
-        $userAlreadyLikedPublication = $this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication);
-        if ($userAlreadyLikedPublication) {
-            return new JsonResponse(['error' => "You already disliked it"], 409);
-        }
-        $author = $publication->getUser();
-        if (!$author) {
-            return new JsonResponse(['error' => 'You are not allowed to add this dislike'], 403);
+        if ($this->dislikeRepository->finddislikeByUserAndPublication($currentUser, $publication)) {
+            return new JsonResponse(['error' => 'You already disliked it'], 409);
         }
 
-        $dislike = new Dislike();
-        $dislike->setPublication($publication);
-        $dislike->setUser($currentUser);
-        $this->dislikeRepository->create($dislike);
+        $dislike = $this->dislikeRepository->create($this->getUser(), $publication, null);
+
         $data = $this->jsonConverter->encodeToJson($dislike, ['all']);
         return new JsonResponse($data, 201, [], true);
     }
 
-    #[Route('/api/dislikes/commentaire', methods: ['POST'])]
+    #[Route('/api/dislikes/comment/id/{id}', methods: ['POST'])]
     #[OA\Post(
-        path: '/api/dislikes/commentaire',
-        summary: "Ajoute un dislike à une commentaire",
-        description: "Ajoute un dislike à une commentaire",
+        path: '/api/dislikes/comment/id/{id}',
+        summary: "Ajouter un dislike à un commentaire",
+        description: "Ajout d'un dislike à un commentaire",
         tags: ['Dislike'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['commentaire_id'],
-                properties: [
-                    new OA\Property(property: 'commentaire_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Dislike créé avec succès',
+                description: 'Dislike ajouté avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 7),
-                        new OA\Property(property: 'user', type: 'user object', example: 'user'),
-                        new OA\Property(property: 'publication', type: 'publication object', example: "publication object"),
-                        new OA\Property(property: 'comment', type: 'comment object', example: "publication object")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'publication', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -158,7 +113,7 @@ class DislikeController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'commentaire_id' required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
                     ]
                 )
             ),
@@ -168,15 +123,6 @@ class DislikeController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this dislike')
                     ]
                 )
             ),
@@ -200,32 +146,20 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function insertIntoCommentaire(Request $request): Response {
-        $data = json_decode($request->getContent(), true);
-        $commentaire_id = $data['publication_id'] ?? null;
+    public function dislikeComment($id): JsonResponse {
+        $comment = $this->commentRepository->find($id);
 
-        if (!$commentaire_id) {
-            return new JsonResponse(['error' => "Parameter 'commentaire_id' required"], 400);
-        }
-        if (!$this->commentRepository->find($commentaire_id)) {
-            return new JsonResponse(['error' => "Commentaire not found"], 409);
+        if (!$comment) {
+            return new JsonResponse(['error' => 'Comment not found'], 404);
         }
 
-        $comment = $this->commentRepository->find($commentaire_id);
         $currentUser = $this->getUser();
-        $userAlreadyLikedComment = $this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment);
-        if ($userAlreadyLikedComment) {
-            return new JsonResponse(['error' => "You already disliked it"], 409);
-        }
-        $author = $comment->getUser();
-        if (!$author) {
-            return new JsonResponse(['error' => 'You are not allowed to add this disliked'], 403);
+        if ($this->dislikeRepository->finddislikeByUserAndComment($currentUser, $comment)) {
+            return new JsonResponse(['error' => 'You already disliked it'], 409);
         }
 
-        $dislike = new Dislike();
-        $dislike->setComment($comment);
-        $dislike->setUser($currentUser);
-        $this->dislikeRepository->create($dislike);
+        $dislike = $this->dislikeRepository->create($this->getUser(), null, $comment);
+
         $data = $this->jsonConverter->encodeToJson($dislike, ['all']);
         return new JsonResponse($data, 201, [], true);
     }
@@ -249,7 +183,7 @@ class DislikeController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "'Parameter 'id' is required'")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
                     ]
                 )
             ),
@@ -282,24 +216,18 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): Response {
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
-        }        
-        if (!$this->dislikeRepository->find($id)) {
-            return new JsonResponse(['error' => "Dislike not found"], 404);
+    public function delete($id): JsonResponse {
+        $dislike = $this->dislikeRepository->find($id);
+        if (!$dislike) {
+            return new JsonResponse(['error' => 'Dislike not found'], 404);
         }
 
-        $dislike = $this->dislikeRepository->find($id);
-        $author = $dislike->getUser();
         $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $author->getUserIdentifier();
-        if (!$isCurrentUser) {
+        if ($currentUser->getUserIdentifier() !== $dislike->getUser()->getUserIdentifier()) {
             return new JsonResponse(['error' => 'You are not allowed to delete this dislike'], 403);
         }
 
         $this->dislikeRepository->delete($dislike);
-
         return new JsonResponse([], 200);
     }
 

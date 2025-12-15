@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
-use App\Repository\ImageRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,48 +11,37 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
-use Doctrine\Persistence\ManagerRegistry;
 
 
 class ModerationController extends AbstractController {
 
-    public function __construct(private UserRepository $userRepository, private JsonConverter $jsonConverter, private ImageRepository $imageRepository, private PublicationRepository $publicationRepository) {
+    private JsonConverter $jsonConverter;
+    private UserRepository $userRepository;
+    private PublicationRepository $publicationRepository;
+
+    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository, PublicationRepository $publicationRepository) {
+        $this->jsonConverter = $jsonConverter;
+        $this->userRepository = $userRepository;
+        $this->publicationRepository = $publicationRepository;
     }
 
-    #[Route('/api/users/ban', methods: ['PUT'])]
+    #[Route('/api/users/ban/id/{id}', methods: ['PUT'])]
     #[OA\Put(
-        path: '/api/users/ban',
-        summary: "Bannissement d'un utilisateur",
-        description: "Verrouiller un utilisateur",
+        path: '/api/users/ban/id/{id}',
+        summary: "Bannir un utilisateur par son ID",
+        description: "Bannissement d'un utilisateur par son ID",
         tags: ['Moderation'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['user_id'],
-                properties: [
-                    new OA\Property(property: 'user_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
-                response: 201,
-                description: 'Bannissement : Utilisateur verrouillé',
+                response: 200,
+                description: 'Utilisateur banni avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 7),
-                        new OA\Property(property: 'user', type: 'user object', example: 'user'),
-                        new OA\Property(property: 'publication', type: 'publication object', example: "publication object"),
-                        new OA\Property(property: 'comment', type: 'comment object', example: "publication object")
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'user_id' required")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: true)
                     ]
                 )
             ),
@@ -76,8 +64,8 @@ class ModerationController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 409,
-                description: 'Not Found',
+                response: 404,
+                description: 'Introuvable',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'User not found')
@@ -86,17 +74,11 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function ban(Request $request): Response {
-        
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        $id = $data["user_id"];
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameter 'user_id' required"], 400);
-        }
+    public function ban($id): JsonResponse {
         $user = $this->userRepository->find($id);
+
         if (!$user) {
-            return new JsonResponse(['error' => "User not found"], 409);
+            return new JsonResponse(['error' => "User not found"], 404);
         }
 
         $currentUser = $this->getUser();
@@ -110,45 +92,29 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to ban this user'], 403);
         }
 
-        $this->userRepository->updateIsBan($user, true);
+        $this->userRepository->ban($user);
+
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/users/deban', methods: ['PUT'])]
+    #[Route('/api/users/deban/id/{id}', methods: ['PUT'])]
     #[OA\Put(
-        path: '/api/users/deban',
-        summary: "Débannissement d'un utilisateur",
-        description: "Déverrouiller un utilisateur",
+        path: '/api/users/deban/id/{id}',
+        summary: "Débannir un utilisateur par son ID",
+        description: "Débannissement d'un utilisateur par son ID",
         tags: ['Moderation'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['user_id'],
-                properties: [
-                    new OA\Property(property: 'user_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
-                response: 201,
-                description: 'Débannissement : Utilisateur déverrouillé',
+                response: 200,
+                description: 'Utilisateur débanni avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 7),
-                        new OA\Property(property: 'user', type: 'user object', example: 'user'),
-                        new OA\Property(property: 'publication', type: 'publication object', example: "publication object"),
-                        new OA\Property(property: 'comment', type: 'comment object', example: "publication object")
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'user_id' required")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
                     ]
                 )
             ),
@@ -166,13 +132,13 @@ class ModerationController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to deban this user')
+                        new OA\Property(property: 'error', type: 'string', example:'You are not allowed to deban this user')
                     ]
                 )
             ),
             new OA\Response(
-                response: 409,
-                description: 'Not Found',
+                response: 404,
+                description: 'Introuvable',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'User not found')
@@ -181,17 +147,11 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function deban(Request $request): Response {
-        
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        $id = $data["user_id"];
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameter 'user_id' required"], 400);
-        }
+    public function deban($id): JsonResponse {
         $user = $this->userRepository->find($id);
+
         if (!$user) {
-            return new JsonResponse(['error' => "User not found"], 409);
+            return new JsonResponse(['error' => "User not found"], 404);
         }
 
         $currentUser = $this->getUser();
@@ -201,34 +161,26 @@ class ModerationController extends AbstractController {
         $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
         $userIsMod = in_array('ROLE_MOD', $user->getRoles());
 
-        if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin))) {
+        if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin)) || ($userIsAdmin)) {
             return new JsonResponse(['error' => 'You are not allowed to deban this user'], 403);
         }
 
-        $this->userRepository->updateIsBan($user, false);
+        $this->userRepository->deban($user);
+
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/publications/lock', methods: ['PUT'])]
+    #[Route('/api/publications/lock/id/{id}', methods: ['PUT'])]
     #[OA\Put(
-        path: '/api/publications/lock',
-        summary: "Vérouillage d'une publication",
-        description: "Empêche la création de nouveaux commentaires sur cette publication",
+        path: '/api/publications/lock/id/{id}',
+        summary: "Verrouiller une publication",
+        description: "Verrouillage d'une publication",
         tags: ['Moderation'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['publication_id'],
-                properties: [
-                    new OA\Property(property: 'publication_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Vérouillage : cette Publication ne pourra avoir de nouveaux commentaires',
+                description: 'Publication verrouillée avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -240,15 +192,6 @@ class ModerationController extends AbstractController {
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'is_lock', type: 'boolean', example: true)
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'publication_id' required")
                     ]
                 )
             ),
@@ -271,7 +214,7 @@ class ModerationController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 409,
+                response: 404,
                 description: 'Not Found',
                 content: new OA\JsonContent(
                     properties: [
@@ -281,17 +224,11 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function lock(Request $request): Response {
-        
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        $id = $data["publication_id"];
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameter 'publication_id' required"], 400);
-        }
+    public function lock($id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
+
         if (!$publication) {
-            return new JsonResponse(['error' => "Publication not found"], 409);
+            return new JsonResponse(['error' => "Publication not found"], 404);
         }
 
         $currentUser = $this->getUser();
@@ -300,31 +237,23 @@ class ModerationController extends AbstractController {
         if (!$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
-        $this->publicationRepository->updateIsLock($publication, true);
+
+        $this->publicationRepository->lock($publication, true);
+
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
     }
 
-
     #[Route('/api/publications/delock', methods: ['PUT'])]
     #[OA\Put(
-        path: '/api/publications/delock',
-        summary: "Dévérouillage d'une publication",
-        description: "Réautorise la création de nouveaux commentaires sur cette publication",
+        path: '/api/publications/delock/id/{id}',
+        summary: "Déverrouiller une publication",
+        description: "Déverrouillage d'une publication",
         tags: ['Moderation'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['publication_id'],
-                properties: [
-                    new OA\Property(property: 'publication_id', type: 'int', example: 1)
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Dévérouillage : cette Publication pourra de nouveau être commententé',
+                description: 'Publication déverrouillée avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -336,15 +265,6 @@ class ModerationController extends AbstractController {
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'is_lock', type: 'boolean', example: false)
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'publication_id' required")
                     ]
                 )
             ),
@@ -367,7 +287,7 @@ class ModerationController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 409,
+                response: 404,
                 description: 'Not Found',
                 content: new OA\JsonContent(
                     properties: [
@@ -377,27 +297,24 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function delock(Request $request): Response {
-        
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        $id = $data["publication_id"];
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameter 'publication_id' required"], 400);
-        }
+    public function delock($id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
+
         if (!$publication) {
-            return new JsonResponse(['error' => "Publication not found"], 409);
+            return new JsonResponse(['error' => "Publication not found"], 404);
         }
 
         $currentUser = $this->getUser();
         $isMod = count(array_intersect($currentUser->getRoles(), ['ROLE_MOD', 'ROLE_ADMIN'])) > 0;
 
         if (!$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to delock this publication'], 403);
+            return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
-        $this->publicationRepository->updateIsLock($publication, false);
+
+        $this->publicationRepository->delock($publication, true);
+
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
     }
+
 }

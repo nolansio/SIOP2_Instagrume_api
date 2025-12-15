@@ -29,7 +29,7 @@ class PublicationRepository extends ServiceEntityRepository {
 
         foreach ($imagePaths as $path) {
             $image = new Image();
-            $image->setDescription('Image'); // TODO
+            $image->setDescription('Image');
             $image->setUrl($path);
 
             $publication->addImage($image);
@@ -54,9 +54,15 @@ class PublicationRepository extends ServiceEntityRepository {
         $entityManager->flush();
     }
 
-    public function updateIsLocked($publication, $value): void {
+    public function lock($publication): void {
         $entityManager = $this->doctrine->getManager();
-        $publication->setIsLocked($value);
+        $publication->setIsLocked(true);
+        $entityManager->flush();
+    }
+
+    public function delock(Publication $publication): void {
+        $entityManager = $this->doctrine->getManager();
+        $publication->setLocked(false);
         $entityManager->flush();
     }
 
