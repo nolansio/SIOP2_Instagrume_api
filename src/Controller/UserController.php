@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
-use App\Repository\ImageRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,12 +15,10 @@ class UserController extends AbstractController {
 
     private JsonConverter $jsonConverter;
     private UserRepository $userRepository;
-    private ImageRepository $imageRepository;
 
-    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository, ImageRepository $imageRepository) {
+    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository) {
         $this->jsonConverter = $jsonConverter;
         $this->userRepository = $userRepository;
-        $this->imageRepository = $imageRepository;
     }
 
     #[Route('/api/users', methods: ['GET'])]
