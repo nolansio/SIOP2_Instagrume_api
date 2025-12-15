@@ -44,6 +44,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
         } catch (Exception) {
             throw new AuthenticationException('Invalid token');
         }
+
         return new SelfValidatingPassport(new UserBadge($payload['username']));
     }
 
@@ -51,8 +52,8 @@ class JWTAuthenticator extends AbstractAuthenticator {
         return null;
     }
 
-    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?JsonResponse {
-        return new JsonResponse(['error' => $exception->getMessage()], 401);
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): JsonResponse {
+        return new JsonResponse(['error' => "Invalid token"], 401);
     }
 
 }
