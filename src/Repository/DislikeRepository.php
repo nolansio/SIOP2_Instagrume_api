@@ -3,6 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\Dislike;
+use App\Entity\Comment;
+use App\Entity\Publication;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -28,6 +31,27 @@ class DislikeRepository extends ServiceEntityRepository
         $entityManager->remove($like);
         $entityManager->flush();
         return $like;
+    }
+
+    public function findDislikeByUserAndPublication(User $user, Publication $publication): ?Dislike {
+        return $this->createQueryBuilder('l')
+        ->andWhere('l.user = :user_id')
+        ->setParameter('user_id', $user->getId())
+        ->andWhere('l.publication = :publication_id')
+        ->setParameter('publication_id', $publication->getId())
+        ->getQuery()
+        ->getOneOrNullResult();
+    }
+
+
+    public function findDislikeByUserAndComment(User $user, Comment $comment): ?Dislike {
+        return $this->createQueryBuilder('l')
+        ->andWhere('l.user = :user_id')
+        ->setParameter('user_id', $user->getId())
+        ->andWhere('l.comment = :comment_id')
+        ->setParameter('comment_id', $comment->getId())
+        ->getQuery()
+        ->getOneOrNullResult();
     }
 
     //    /**

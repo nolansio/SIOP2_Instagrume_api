@@ -270,6 +270,15 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this like')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Like not found')
+                    ]
+                )
             )
         ]
     )]
@@ -278,7 +287,7 @@ class LikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
         }        
         if (!$this->likeRepository->find($id)) {
-            return new JsonResponse(['error' => "This Like not exists"], 409);
+            return new JsonResponse(['error' => "Like not found"], 404);
         }
 
         $like = $this->likeRepository->find($id);

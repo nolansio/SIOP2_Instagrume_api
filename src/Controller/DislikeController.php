@@ -74,6 +74,24 @@ class DislikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this dislike')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication not found')
+                    ]
+                )
+                    ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflit',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
+                    ]
+                )
             )
         ]
     )]
@@ -85,16 +103,18 @@ class DislikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameter 'publication_id' required"], 400);
         }
         if (!$this->publicationRepository->find($publication_id)) {
-            return new JsonResponse(['error' => "Publication not exists"], 409);
+            return new JsonResponse(['error' => "Publication not found"], 409);
         }
 
         $publication = $this->publicationRepository->find($publication_id);
-        $author = $publication->getUser();
         $currentUser = $this->getUser();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$author && !$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this dislike'], 403);
+        $userAlreadyLikedPublication = $this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication);
+        if ($userAlreadyLikedPublication) {
+            return new JsonResponse(['error' => "You already disliked it"], 409);
+        }
+        $author = $publication->getUser();
+        if (!$author) {
+            return new JsonResponse(['error' => 'You are not allowed to add this dislike'], 403);
         }
 
         $dislike = new Dislike();
@@ -159,6 +179,24 @@ class DislikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to add this dislike')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Comment not found')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflit',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
+                    ]
+                )
             )
         ]
     )]
@@ -170,20 +208,22 @@ class DislikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameter 'commentaire_id' required"], 400);
         }
         if (!$this->commentRepository->find($commentaire_id)) {
-            return new JsonResponse(['error' => "Commentaire not exists"], 409);
+            return new JsonResponse(['error' => "Commentaire not found"], 409);
         }
 
-        $commentaire = $this->commentRepository->find($commentaire_id);
-        $author = $commentaire->getUser();
+        $comment = $this->commentRepository->find($commentaire_id);
         $currentUser = $this->getUser();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$author && !$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this dislike'], 403);
+        $userAlreadyLikedComment = $this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment);
+        if ($userAlreadyLikedComment) {
+            return new JsonResponse(['error' => "You already disliked it"], 409);
+        }
+        $author = $comment->getUser();
+        if (!$author) {
+            return new JsonResponse(['error' => 'You are not allowed to add this disliked'], 403);
         }
 
         $dislike = new Dislike();
-        $dislike->setComment($commentaire);
+        $dislike->setComment($comment);
         $dislike->setUser($currentUser);
         $this->dislikeRepository->create($dislike);
         $data = $this->jsonConverter->encodeToJson($dislike, ['all']);
@@ -227,7 +267,16 @@ class DislikeController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this dislikes')
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this dislike')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Dislike not found')
                     ]
                 )
             )
@@ -238,20 +287,18 @@ class DislikeController extends AbstractController {
             return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
         }        
         if (!$this->dislikeRepository->find($id)) {
-            return new JsonResponse(['error' => "This Dislike not exists"], 409);
+            return new JsonResponse(['error' => "Dislike not found"], 404);
         }
 
-        $dislikes = $this->dislikeRepository->find($id);
-        $author = $dislikes->getUser();
+        $dislike = $this->dislikeRepository->find($id);
+        $author = $dislike->getUser();
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $author->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$isCurrentUser && !$isMod) {
+        if (!$isCurrentUser) {
             return new JsonResponse(['error' => 'You are not allowed to delete this dislike'], 403);
         }
 
-        $this->dislikeRepository->delete($dislikes);
+        $this->dislikeRepository->delete($dislike);
 
         return new JsonResponse([], 200);
     }
