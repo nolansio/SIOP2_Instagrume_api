@@ -231,9 +231,12 @@ class UserController extends AbstractController {
     )]
     public function getIsBannedById($id): JsonResponse {
         $user = $this->userRepository->find($id);
+
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
+
         }
+
         $data = $this->jsonConverter->encodeToJson(["value" => $user->isBanned()]);
         return new JsonResponse($data, 200, [], true);
     }
@@ -331,60 +334,60 @@ class UserController extends AbstractController {
                 "multipart/form-data" => new OA\MediaType(
                     mediaType: "multipart/form-data",
                     schema: new OA\Schema(
-                    required: ["id"],
+                        required: ["id"],
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer', example: "1"),
+                            new OA\Property(property: 'username', type: 'string', example: "user"),
+                            new OA\Property(property: 'password', type: 'string', example: "password"),
+                            new OA\Property(property: "avatar", type: "string", format: "binary")
+                        ]
+                    )
+                )
+            ]
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur modifié avec succès',
+                content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: "1"),
-                        new OA\Property(property: 'username', type: 'string', example: "user"),
-                        new OA\Property(property: 'password', type: 'string', example: "password"),
-                        new OA\Property(property: "avatar", type: "string", format: "binary")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id', 'username' and 'password' required")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Introuvable',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
                     ]
                 )
             )
         ]
-    ),
-    responses: [
-        new OA\Response(
-            response: 200,
-            description: 'Utilisateur modifié avec succès',
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'id', type: 'integer', example: 1),
-                    new OA\Property(property: 'username', type: 'string', example: 'user'),
-                    new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
-                    new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                    new OA\Property(property: 'is_banned', type: 'boolean', example: false)
-                ]
-            )
-        ),
-        new OA\Response(
-            response: 400,
-            description: 'Mauvaise requête',
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'error', type: 'string', example: "Parameters 'id', 'username' and 'password' required")
-                ]
-            )
-        ),
-        new OA\Response(
-            response: 401,
-            description: 'Non autorisé',
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
-                ]
-            )
-        ),
-        new OA\Response(
-            response: 404,
-            description: 'Introuvable',
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'error', type: 'string', example: 'User not found')
-                ]
-            )
-        )
-    ]
     )]
     public function update(Request $request): JsonResponse {
         // === Fix PUT + multipart ===
