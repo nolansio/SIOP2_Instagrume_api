@@ -233,12 +233,12 @@ class Publication
         return $this;
     }
 
-    public function getIsLocked(): bool
+    public function isLocked(): bool
     {
         return $this->isLocked;
     }
 
-    public function setIsLocked(bool $isLocked): self
+    public function setLocked(bool $isLocked): self
     {
         $this->isLocked = $isLocked;
         return $this;

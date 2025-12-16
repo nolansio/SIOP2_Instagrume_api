@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Comment;
+use App\Entity\Publication;
+use App\Entity\User;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -19,7 +21,7 @@ class CommentRepository extends ServiceEntityRepository {
         $this->doctrine = $doctrine;
     }
 
-    public function create($content, $user, $publication, $original_comment): Comment {
+    public function create(string $content, ?User $user, Publication $publication, ?Comment $original_comment): Comment {
         $comment = new Comment();
 
         $comment->setContent($content);
@@ -34,19 +36,20 @@ class CommentRepository extends ServiceEntityRepository {
         return $comment;
     }
 
-    public function update($comment, $content): Comment {
+    public function update(Comment $comment, string $content): Comment {
         $comment->setContent($content);
+
         $entityManager = $this->doctrine->getManager();
         $entityManager->persist($comment);
         $entityManager->flush();
+
         return $comment;
     }
 
-    public function delete($comment): Comment {
+    public function delete(Comment $comment): void {
         $entityManager = $this->doctrine->getManager();
         $entityManager->remove($comment);
         $entityManager->flush();
-        return $comment;
     }
 
 }
