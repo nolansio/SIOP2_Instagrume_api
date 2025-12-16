@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class DislikeRepository extends ServiceEntityRepository {
 
-    public function __construct(private ManagerRegistry $doctrine) {
+    public function __construct(private readonly ManagerRegistry $doctrine) {
         parent::__construct($doctrine, Dislike::class);
     }
 
@@ -31,11 +31,10 @@ class DislikeRepository extends ServiceEntityRepository {
         return $dislike;
     }
 
-    public function delete($dislike): Dislike {
+    public function delete(Dislike $dislike): void {
         $entityManager = $this->doctrine->getManager();
         $entityManager->remove($dislike);
         $entityManager->flush();
-        return $dislike;
     }
 
     public function findDislikeByUserAndPublication(?User $user, Publication $publication): ?Dislike {
@@ -45,7 +44,8 @@ class DislikeRepository extends ServiceEntityRepository {
             ->andWhere('l.publication = :publication_id')
             ->setParameter('publication_id', $publication->getId())
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
 
@@ -56,7 +56,8 @@ class DislikeRepository extends ServiceEntityRepository {
             ->andWhere('l.comment = :comment_id')
             ->setParameter('comment_id', $comment->getId())
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
     }
 
 }
