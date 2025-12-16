@@ -244,7 +244,7 @@ class ModerationController extends AbstractController {
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/api/publications/delock', methods: ['PUT'])]
+    #[Route('/api/publications/delock/id/{id}', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/publications/delock/id/{id}',
         summary: "Déverrouiller une publication",
