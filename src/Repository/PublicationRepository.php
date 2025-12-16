@@ -44,6 +44,13 @@ class PublicationRepository extends ServiceEntityRepository {
 
     public function delete($publication): void {
         $entityManager = $this->doctrine->getManager();
+        $images = $publication->getImages();
+
+        foreach ($images as $image) {
+            $path = __DIR__ . '/../../public' . $image->getUrl();
+            unlink($path);
+        }
+
         $entityManager->remove($publication);
         $entityManager->flush();
     }
