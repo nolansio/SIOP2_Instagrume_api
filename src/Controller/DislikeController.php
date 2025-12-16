@@ -72,7 +72,7 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function dislikePublication($id): JsonResponse {
+    public function dislikePublication(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -146,7 +146,7 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function dislikeComment($id): JsonResponse {
+    public function dislikeComment(int $id): JsonResponse {
         $comment = $this->commentRepository->find($id);
 
         if (!$comment) {
@@ -216,7 +216,7 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): JsonResponse {
+    public function delete(int $id): JsonResponse {
         $dislike = $this->dislikeRepository->find($id);
         if (!$dislike) {
             return new JsonResponse(['error' => 'Dislike not found'], 404);

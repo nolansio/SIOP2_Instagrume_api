@@ -72,7 +72,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function ban($id): JsonResponse {
+    public function ban(int $id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -90,7 +90,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to ban this user'], 403);
         }
 
-        $this->userRepository->ban($user);
+        $user = $this->userRepository->ban($user);
 
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
@@ -145,7 +145,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function deban($id): JsonResponse {
+    public function deban(int $id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -163,7 +163,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to deban this user'], 403);
         }
 
-        $this->userRepository->deban($user);
+        $user = $this->userRepository->deban($user);
 
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
@@ -222,7 +222,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function lock($id): JsonResponse {
+    public function lock(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -236,7 +236,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->lock($publication);
+        $publication = $this->publicationRepository->lock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
@@ -295,7 +295,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function delock($id): JsonResponse {
+    public function delock(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -309,7 +309,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->delock($publication);
+        $publication = $this->publicationRepository->delock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);

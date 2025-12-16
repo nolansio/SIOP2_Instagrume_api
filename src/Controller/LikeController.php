@@ -72,7 +72,7 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function likePublication($id): JsonResponse {
+    public function likePublication(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -146,7 +146,7 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function likeComment($id): JsonResponse {
+    public function likeComment(int $id): JsonResponse {
         $comment = $this->commentRepository->find($id);
 
         if (!$comment) {
@@ -216,7 +216,7 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): JsonResponse {
+    public function delete(int $id): JsonResponse {
         $like = $this->likeRepository->find($id);
         if (!$like) {
             return new JsonResponse(['error' => 'Like not found'], 404);

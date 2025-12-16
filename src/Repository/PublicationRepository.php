@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Image;
 use App\Entity\Publication;
+use App\Entity\User;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,7 +21,7 @@ class PublicationRepository extends ServiceEntityRepository {
         $this->doctrine = $doctrine;
     }
 
-    public function create($description, $user, $imagePaths): Publication {
+    public function create(?User $user, string $description, array $imagePaths): Publication {
         $publication = new Publication();
 
         $publication->setUser($user);
@@ -42,28 +43,41 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
-    public function delete($publication): void {
+    public function delete(Publication $publication): void {
         $entityManager = $this->doctrine->getManager();
+        $images = $publication->getImages();
+
+        foreach ($images as $image) {
+            $path = __DIR__ . '/../../public' . $image->getUrl();
+            @unlink($path);
+        }
+
         $entityManager->remove($publication);
         $entityManager->flush();
     }
 
-    public function update($publication, $description): void {
+    public function update(Publication $publication, string $description): Publication {
         $entityManager = $this->doctrine->getManager();
         $publication->setDescription($description);
         $entityManager->flush();
+
+        return $publication;
     }
 
-    public function lock($publication): void {
+    public function lock(Publication $publication): Publication {
         $entityManager = $this->doctrine->getManager();
-        $publication->setIsLocked(true);
+        $publication->setLocked(true);
         $entityManager->flush();
+
+        return $publication;
     }
 
-    public function delock(Publication $publication): void {
+    public function delock(Publication $publication): Publication {
         $entityManager = $this->doctrine->getManager();
         $publication->setLocked(false);
         $entityManager->flush();
+
+        return $publication;
     }
 
 }

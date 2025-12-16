@@ -9,7 +9,6 @@ use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
@@ -62,7 +61,7 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function getAll(): Response {
+    public function getAll(): JsonResponse {
         $comments = $this->commentRepository->findAll();
 
         $data = $this->jsonConverter->encodeToJson($comments, ['user']);
@@ -112,7 +111,7 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function get($id): Response {
+    public function get(int $id): JsonResponse {
         $comment = $this->commentRepository->find($id);
 
         if (!$comment) {
@@ -186,7 +185,7 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function insert(Request $request): Response {
+    public function insert(Request $request): JsonResponse {
         $data = json_decode($request->getContent(), true);
         $id = $data['id'] ?? null;
         $content = $data['content'] ?? null;
@@ -368,7 +367,7 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): Response {
+    public function delete(int $id): JsonResponse {
         $comment = $this->commentRepository->find($id);
 
         if (!$comment) {

@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LikeRepository extends ServiceEntityRepository {
 
-    public function __construct(private ManagerRegistry $doctrine) {
+    public function __construct(private readonly ManagerRegistry $doctrine) {
         parent::__construct($doctrine, Like::class);
     }
 
@@ -31,32 +31,33 @@ class LikeRepository extends ServiceEntityRepository {
         return $like;
     }
 
-    public function delete($like): Like {
+    public function delete(Like $like): void {
         $entityManager = $this->doctrine->getManager();
         $entityManager->remove($like);
         $entityManager->flush();
-        return $like;
     }
 
     public function findLikeByUserAndPublication(?User $user, Publication $publication): ?Like {
         return $this->createQueryBuilder('l')
-        ->andWhere('l.user = :user_id')
-        ->setParameter('user_id', $user->getId())
-        ->andWhere('l.publication = :publication_id')
-        ->setParameter('publication_id', $publication->getId())
-        ->getQuery()
-        ->getOneOrNullResult();
+            ->andWhere('l.user = :user_id')
+            ->setParameter('user_id', $user->getId())
+            ->andWhere('l.publication = :publication_id')
+            ->setParameter('publication_id', $publication->getId())
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
     }
 
 
     public function findLikeByUserAndComment(?User $user, Comment $comment): ?Like {
         return $this->createQueryBuilder('l')
-        ->andWhere('l.user = :user_id')
-        ->setParameter('user_id', $user->getId())
-        ->andWhere('l.comment = :comment_id')
-        ->setParameter('comment_id', $comment->getId())
-        ->getQuery()
-        ->getOneOrNullResult();
+            ->andWhere('l.user = :user_id')
+            ->setParameter('user_id', $user->getId())
+            ->andWhere('l.comment = :comment_id')
+            ->setParameter('comment_id', $comment->getId())
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
     }
 
 }

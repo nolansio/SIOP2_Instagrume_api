@@ -15,7 +15,7 @@ class PublicationController extends AbstractController {
 
     private PublicationRepository $publicationRepository;
     private JsonConverter $jsonConverter;
-    private userRepository $userRepository;
+    private UserRepository $userRepository;
 
     public function __construct(PublicationRepository $publicationRepository, JsonConverter $jsonConverter, UserRepository $userRepository) {
         $this->publicationRepository = $publicationRepository;
@@ -109,7 +109,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function get($id): JsonResponse {
+    public function get(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -204,7 +204,7 @@ class PublicationController extends AbstractController {
             $imagePaths[] = '/images/'.$name;
         }
 
-        $publication = $this->publicationRepository->create($description, $this->getUser(), $imagePaths);
+        $publication = $this->publicationRepository->create($this->getUser(), $description, $imagePaths);
         $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
         return new JsonResponse($data, 201, [], true);
@@ -295,7 +295,7 @@ class PublicationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to update this publication'], 403);
         }
 
-        $this->publicationRepository->update($publication, $description);
+        $publication = $this->publicationRepository->update($publication, $description);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['user']);
         return new JsonResponse($data, 200, [], true);
@@ -353,7 +353,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): JsonResponse {
+    public function delete(int $id): JsonResponse {
         if (!$id) {
             return new JsonResponse(['error' => "Parameters 'id' required"], 400);
         }
@@ -380,7 +380,6 @@ class PublicationController extends AbstractController {
         }
 
         $this->publicationRepository->delete($publication);
-
         return new JsonResponse([], 200);
     }
 
