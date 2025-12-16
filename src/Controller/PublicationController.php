@@ -109,7 +109,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function get($id): JsonResponse {
+    public function get(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -353,7 +353,7 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): JsonResponse {
+    public function delete(int $id): JsonResponse {
         if (!$id) {
             return new JsonResponse(['error' => "Parameters 'id' required"], 400);
         }

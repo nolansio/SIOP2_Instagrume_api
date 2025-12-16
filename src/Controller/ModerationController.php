@@ -72,7 +72,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function ban($id): JsonResponse {
+    public function ban(int $id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -145,7 +145,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function deban($id): JsonResponse {
+    public function deban(int $id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -222,7 +222,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function lock($id): JsonResponse {
+    public function lock(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
@@ -295,7 +295,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function delock($id): JsonResponse {
+    public function delock(int $id): JsonResponse {
         $publication = $this->publicationRepository->find($id);
 
         if (!$publication) {
