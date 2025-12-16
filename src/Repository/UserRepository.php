@@ -82,8 +82,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return false;
         }
 
-        $uniqueName = 'imgAvatar_'.$user->getUsername().'_'.uniqid().'.'.$fileExt;
-        $destPath = $uploadDir.$uniqueName;
+        $name = uniqid().'.png';
+        $destPath = $uploadDir.$name;
 
         if (!ImageService::compressAndResizeImage($avatar->getPathname(), $destPath, 800, 800, 75)) {
             return false;
