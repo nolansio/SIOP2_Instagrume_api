@@ -216,7 +216,6 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-
     public function delete($id): JsonResponse {
         $like = $this->likeRepository->find($id);
         if (!$like) {
