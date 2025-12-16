@@ -56,7 +56,7 @@ class ModerationController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'user_id' required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'user_id' and 'banDurationDays' required")
                     ]
                 )
             ),
@@ -95,8 +95,8 @@ class ModerationController extends AbstractController {
         $data = json_decode($json, true);
         $id = $data["user_id"];
         $banDurationDays = $data["banDurationDays"];
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameter 'user_id' required"], 400);
+        if (!$id || !$banDurationDays) {
+            return new JsonResponse(['error' => "Parameter 'user_id' and 'banDurationDays' required"], 400);
         }
         $user = $this->userRepository->find($id);
         if (!$user) {

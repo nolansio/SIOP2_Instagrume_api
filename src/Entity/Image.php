@@ -30,6 +30,7 @@ class Image
     private ?Publication $publication = null;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     #[Groups(['all'])]
     private ?User $user = null;
 

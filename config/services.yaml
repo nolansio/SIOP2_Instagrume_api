@@ -6,6 +6,7 @@
 parameters:
     jwt_private_key_path: '%kernel.project_dir%/%env(JWT_PRIVATE_KEY_PATH)%'
     jwt_public_key_path: '%kernel.project_dir%/%env(JWT_PUBLIC_KEY_PATH)%'
+    public_directory: '%kernel.project_dir%/public'
 
 services:
     _defaults:

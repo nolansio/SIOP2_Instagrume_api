@@ -69,7 +69,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, Image>
      */
-    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'user')]
+    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'user', cascade: ['remove'], orphanRemoval: true)]
     #[Groups(['all', 'user'])]
     private Collection $images;
 
