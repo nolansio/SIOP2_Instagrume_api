@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Repository\dislikeRepository;
+use App\Repository\DislikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
 use App\Service\JsonConverter;
