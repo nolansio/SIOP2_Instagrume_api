@@ -48,7 +48,7 @@ class PublicationRepository extends ServiceEntityRepository {
 
         foreach ($images as $image) {
             $path = __DIR__ . '/../../public' . $image->getUrl();
-            unlink($path);
+            @unlink($path);
         }
 
         $entityManager->remove($publication);

@@ -119,27 +119,30 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function updateAvatar(User $user, UploadedFile $avatar): User {
         $path = '../public/images/'.uniqid().'.png';
-        ImageService::compressAndResizeImage($avatar->getPathname(), $path, 800, 800, 75);
+
+        ImageService::compressAndResizeImage(
+            $avatar->getPathname(),
+            $path, 800,
+            800,
+            75
+        );
 
         $entityManager = $this->doctrine->getManager();
-        $currentImg = $this->imageRepository->findBy(['user' => $user]);
-        $newImg = new Image();
+        $avatars = $this->imageRepository->findBy(['user' => $user]);
 
-        if ($currentImg) {
-            $currentImg = $currentImg[0];
-
-            if (file_exists($currentImg->getUrl())) {
-                unlink($currentImg->getUrl());
+        if ($avatars) {
+            foreach ($avatars as $image) {
+                @unlink('../public/'.$image->getUrl());
+                $entityManager->remove($image);
             }
-
-            $entityManager->remove($currentImg);
         }
 
-        $newImg->setUrl(str_replace('../public', '', $path));
-        $newImg->setDescription($user->getUsername());
-        $newImg->setUser($user);
+        $newAvatar = new Image();
+        $newAvatar->setUrl(str_replace('../public', '', $path));
+        $newAvatar->setDescription($user->getUsername());
+        $newAvatar->setUser($user);
 
-        $entityManager->persist($newImg);
+        $entityManager->persist($newAvatar);
         $entityManager->flush();
 
         return $user;
@@ -151,7 +154,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         foreach ($images as $image) {
             $path = __DIR__ . '/../../public' . $image->getUrl();
-            unlink($path);
+            @unlink($path);
         }
 
         $entityManager->remove($user);
