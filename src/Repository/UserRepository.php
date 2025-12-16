@@ -73,7 +73,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $uploadDir = '../public/images/';
         $fileExt = strtolower($avatar->getClientOriginalExtension());
 
-        if (!in_array($fileExt, ['jpg', 'jpeg', 'png', 'gif'])) {
+        $extensions = [
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif',
+            'svg', 'heic', 'heif', 'ico', 'jfif', 'avif', 'psd', 'raw'
+        ];
+
+        if (!in_array($fileExt, $extensions)) {
             return false;
         }
 
