@@ -119,7 +119,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function updateAvatar(User $user, UploadedFile $avatar): User {
         $path = '../public/images/'.uniqid().'.png';
-
         ImageService::compressAndResizeImage($avatar->getPathname(), $path, 800, 800, 75);
 
         $entityManager = $this->doctrine->getManager();
@@ -133,8 +132,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 unlink($currentImg->getUrl());
             }
 
-            $currentImg->setUrl($path);
-            $entityManager->persist($currentImg);
+            $entityManager->remove($currentImg);
         }
 
         $newImg->setUrl(str_replace('../public', '', $path));
