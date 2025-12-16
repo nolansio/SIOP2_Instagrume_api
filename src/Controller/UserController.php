@@ -410,7 +410,7 @@ class UserController extends AbstractController {
             $user = $this->userRepository->updatePassword($password, $user);
         }
         if ($avatar) {
-            $isFormatOk = $this->userRepository->updateAvatar($this->getUser(), $avatar);
+            $isFormatOk = $this->userRepository->updateAvatar($user, $avatar);
             if (!$isFormatOk) {
                 return new JsonResponse(['error' => "Bad image extension"], 415);
             }
