@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Comment;
 use App\Repository\CommentRepository;
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
@@ -12,7 +11,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\Persistence\ManagerRegistry;
 use OpenApi\Attributes as OA;
 
 class CommentController extends AbstractController {
@@ -33,13 +31,13 @@ class CommentController extends AbstractController {
     #[Route('/api/comments', methods: ['GET'])]
     #[OA\Get(
         path: '/api/comments',
-        summary: "Récupérer toutes les commentaires",
-        description: "Récupération de toutes les commentaires",
+        summary: "Récupérer tout les commentaires",
+        description: "Récupération de tout les commentaires",
         tags: ['Commentaire'],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Commentaires récupérées avec succès',
+                description: 'Commentaires récupérés avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -58,7 +56,7 @@ class CommentController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
                     ]
                 )
             )
@@ -66,8 +64,8 @@ class CommentController extends AbstractController {
     )]
     public function getAll(): Response {
         $comments = $this->commentRepository->findAll();
-        $data = $this->jsonConverter->encodeToJson($comments, ['user']);
 
+        $data = $this->jsonConverter->encodeToJson($comments, ['user']);
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -80,7 +78,7 @@ class CommentController extends AbstractController {
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Commentaire récupérée avec succès',
+                description: 'Commentaire récupéré avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
@@ -99,7 +97,7 @@ class CommentController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'Missing token / Invalid token')
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
                     ]
                 )
             ),
@@ -122,7 +120,6 @@ class CommentController extends AbstractController {
         }
 
         $data = $this->jsonConverter->encodeToJson($comment, ['user']);
-
         return new JsonResponse($data, 200, [], true);
     }
 
@@ -135,10 +132,10 @@ class CommentController extends AbstractController {
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['content', 'publication_id'],
+                required: ['id', 'content'],
                 properties: [
+                    new OA\Property(property: 'id', type: 'integer', example: 7),
                     new OA\Property(property: 'content', type: 'string', example: "Pas moi"),
-                    new OA\Property(property: 'publication_id', type: 'integer', example: 7),
                     new OA\Property(property: 'original_comment', type: 'integer', example: 1)
                 ]
             )
@@ -146,11 +143,11 @@ class CommentController extends AbstractController {
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Commentaire créée avec succès',
+                description: 'Commentaire créé avec succès',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 4),
-                        new OA\Property(property: 'content', type: 'string', example: "Wow"),
+                        new OA\Property(property: 'content', type: 'string', example: "Pas moi"),
                         new OA\Property(property: 'created_at', type: 'string', example: '2025-12-03 10:47:38'),
                         new OA\Property(property: 'original_comment', type: 'string', example: 1),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
@@ -165,7 +162,7 @@ class CommentController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'content' and 'publication_id' required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id' and 'content' required")
                     ]
                 )
             ),
@@ -180,10 +177,10 @@ class CommentController extends AbstractController {
             ),
             new OA\Response(
                 response: 423,
-                description: 'Publication associée verrouillée',
+                description: 'Publication verrouillée',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'This Publication is currently locked, insert a commment is not allowed')
+                        new OA\Property(property: 'error', type: 'string', example: 'Publication is locked')
                     ]
                 )
             )
@@ -191,15 +188,15 @@ class CommentController extends AbstractController {
     )]
     public function insert(Request $request): Response {
         $data = json_decode($request->getContent(), true);
+        $id = $data['id'] ?? null;
         $content = $data['content'] ?? null;
-        $publication_id = $data['publication_id'] ?? 0;
         $original_comment_id = $data['original_comment'] ?? 0;
 
-        if (!$content || $publication_id === 0) {
-            return new JsonResponse(['error' => "Parameters 'content' and 'publication_id' required"], 400);
+        if (!$content || !$id) {
+            return new JsonResponse(['error' => "Parameters 'id' and 'content' required"], 400);
         }
 
-        $publication = $this->publicationRepository->find($publication_id);
+        $publication = $this->publicationRepository->find($id);
         if (!$publication) {
             return new JsonResponse(['error' => "Publication not found"], 400);
         }
@@ -212,12 +209,12 @@ class CommentController extends AbstractController {
             }
         }
         if ($publication->isLocked() || ($original_comment && $original_comment->getPublication()->isLocked())) {
-            return new JsonResponse(['error' => "This Publication is currently locked, insert a commment is not allowed"], 423);
+            return new JsonResponse(['error' => "Publication is locked"], 423);
         }
 
         $comment = $this->commentRepository->create($content, $this->getUser(), $publication, $original_comment);
-        $data = $this->jsonConverter->encodeToJson($comment, ['user']);
 
+        $data = $this->jsonConverter->encodeToJson($comment, ['user']);
         return new JsonResponse($data, 201, [], true);
     }
 
@@ -287,9 +284,11 @@ class CommentController extends AbstractController {
         $data = json_decode($request->getContent(), true);
         $id = $data['id'] ?? null;
         $content = $data['content'] ?? null;
+
         if (!$id || !$content) {
             return new JsonResponse(['error' => "Parameters 'id' and 'content' required"], 400);
         }
+
         $comment = $this->commentRepository->find($id);
         if (!$comment) {
             return new JsonResponse(['error' => "Comment not found"], 404);
@@ -312,8 +311,8 @@ class CommentController extends AbstractController {
         }
 
         $comment = $this->commentRepository->update($comment, $content);
-        $data = $this->jsonConverter->encodeToJson($comment, ['user']);
 
+        $data = $this->jsonConverter->encodeToJson($comment, ['user']);
         return new JsonResponse($data, 201, [], true);
     }
 
@@ -370,14 +369,12 @@ class CommentController extends AbstractController {
         ]
     )]
     public function delete($id): Response {
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' is required"], 400);
-        }
-
         $comment = $this->commentRepository->find($id);
+
         if (!$comment) {
             return new JsonResponse(['error' => "Comment not found"], 404);
         }
+
         $user = $this->userRepository->find($comment->getUser()->getId());
         $currentUser = $this->getUser();
         $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
@@ -395,7 +392,6 @@ class CommentController extends AbstractController {
         }
 
         $this->commentRepository->delete($comment);
-
         return new JsonResponse([], 200);
     }
 

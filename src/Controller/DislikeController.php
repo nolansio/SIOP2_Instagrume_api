@@ -86,7 +86,7 @@ class DislikeController extends AbstractController {
 
         $dislike = $this->dislikeRepository->create($this->getUser(), $publication, null);
 
-        $data = $this->jsonConverter->encodeToJson($dislike, ['all']);
+        $data = $this->jsonConverter->encodeToJson($dislike);
         return new JsonResponse($data, 201, [], true);
     }
 
@@ -160,7 +160,7 @@ class DislikeController extends AbstractController {
 
         $dislike = $this->dislikeRepository->create($this->getUser(), null, $comment);
 
-        $data = $this->jsonConverter->encodeToJson($dislike, ['all']);
+        $data = $this->jsonConverter->encodeToJson($dislike);
         return new JsonResponse($data, 201, [], true);
     }
 
