@@ -236,7 +236,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->lock($publication);
+        $publication = $this->publicationRepository->lock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
@@ -309,7 +309,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->delock($publication);
+        $publication = $this->publicationRepository->delock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
