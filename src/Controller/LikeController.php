@@ -86,7 +86,7 @@ class LikeController extends AbstractController {
 
         $like = $this->likeRepository->create($this->getUser(), $publication, null);
 
-        $data = $this->jsonConverter->encodeToJson($like, ['all']);
+        $data = $this->jsonConverter->encodeToJson($like);
         return new JsonResponse($data, 201, [], true);
     }
 
@@ -160,7 +160,7 @@ class LikeController extends AbstractController {
 
         $like = $this->likeRepository->create($this->getUser(), null, $comment);
 
-        $data = $this->jsonConverter->encodeToJson($like, ['all']);
+        $data = $this->jsonConverter->encodeToJson($like);
         return new JsonResponse($data, 201, [], true);
     }
 
