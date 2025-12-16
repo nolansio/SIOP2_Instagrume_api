@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Image;
 use App\Entity\Publication;
 use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -25,11 +26,11 @@ class PublicationRepository extends ServiceEntityRepository {
 
         $publication->setUser($user);
         $publication->setDescription($description);
-        $publication->setCreatedAt(new DateTimeImmutable("now"));
+        $publication->setCreatedAt(new DateTimeImmutable("now", new DateTimeZone("Europe/Paris")));
 
         foreach ($imagePaths as $path) {
             $image = new Image();
-            $image->setDescription('Image'); // TODO
+            $image->setDescription('Image');
             $image->setUrl($path);
 
             $publication->addImage($image);

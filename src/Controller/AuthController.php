@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
+use function Symfony\Component\Clock\now;
 
 class AuthController extends AbstractController {
 
@@ -103,7 +104,7 @@ class AuthController extends AbstractController {
             return new JsonResponse(['error' => "Incorrect password"], 401);
         }
 
-        if ($user->isBanned()) {
+        if ($user->getBannedUntil() > now()) {
             return new JsonResponse(['error'=> 'User is banned'], 403);
         }
 

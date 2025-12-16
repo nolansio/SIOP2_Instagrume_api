@@ -7,13 +7,15 @@ use App\Repository\PublicationRepository;
 use App\Repository\ImageRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
+use DateTime;
+use DateTimeZone;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 use Doctrine\Persistence\ManagerRegistry;
-
+use function Symfony\Component\Clock\now;
 
 class ModerationController extends AbstractController {
 
@@ -29,9 +31,10 @@ class ModerationController extends AbstractController {
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['user_id'],
+                required: ['user_id', 'banDurationDays'],
                 properties: [
-                    new OA\Property(property: 'user_id', type: 'int', example: 1)
+                    new OA\Property(property: 'user_id', type: 'int', example: 1),
+                    new OA\Property(property: 'banDurationDays', type: 'int', example: 1)
                 ]
             )
         ),
@@ -91,6 +94,7 @@ class ModerationController extends AbstractController {
         $json = $request->getContent();
         $data = json_decode($json, true);
         $id = $data["user_id"];
+        $banDurationDays = $data["banDurationDays"];
         if (!$id) {
             return new JsonResponse(['error' => "Parameter 'user_id' required"], 400);
         }
@@ -109,8 +113,10 @@ class ModerationController extends AbstractController {
         if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin)) || ($userIsAdmin)) {
             return new JsonResponse(['error' => 'You are not allowed to ban this user'], 403);
         }
-
-        $this->userRepository->updateIsBan($user, true);
+        $date = new DateTime('now', new DateTimeZone('Europe/Paris'));
+        $interval = '+' . $banDurationDays . ' days';
+        $date->modify($interval);
+        $this->userRepository->updateBannedUntil($user, value: $date);
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
@@ -171,11 +177,20 @@ class ModerationController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 409,
+                response: 404,
                 description: 'Not Found',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 409,
+                description: 'Confict',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'This user is already unbanned')
                     ]
                 )
             )
@@ -191,7 +206,7 @@ class ModerationController extends AbstractController {
         }
         $user = $this->userRepository->find($id);
         if (!$user) {
-            return new JsonResponse(['error' => "User not found"], 409);
+            return new JsonResponse(['error' => "User not found"], 404);
         }
 
         $currentUser = $this->getUser();
@@ -204,8 +219,11 @@ class ModerationController extends AbstractController {
         if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin))) {
             return new JsonResponse(['error' => 'You are not allowed to deban this user'], 403);
         }
+        if ($user->getBannedUntil() < now()) {
+            return new JsonResponse(['error' => 'This user is already unbanned'], 409);
+        }
 
-        $this->userRepository->updateIsBan($user, false);
+        $this->userRepository->updateBannedUntil($user, new DateTime('now', new DateTimeZone('Europe/Paris')));
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }

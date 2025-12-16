@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -72,9 +73,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['all', 'user'])]
     private Collection $images;
 
-    #[ORM\Column(type: 'boolean')]
+    #[ORM\Column(type: 'datetime')]
     #[Groups(['all', 'user'])]
-    private bool $isBanned;
+    private ?DateTime $bannedUntil;
 
     public function __construct()
     {
@@ -83,7 +84,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->publications = new ArrayCollection();
         $this->comments = new ArrayCollection();
         $this->images = new ArrayCollection();
-        $this->isBanned = false;
+        $this->bannedUntil = new DateTime('1970-01-01 00:00:00');
     }
 
     public function getId(): ?int
@@ -317,14 +318,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isBanned(): bool
+    public function getBannedUntil(): DateTime
     {
-        return $this->isBanned;
+        return $this->bannedUntil;
     }
 
-    public function setBanned(bool $isBanned): self
+    public function setBannedUntil(DateTime $bannedUntil): self
     {
-        $this->isBanned = $isBanned;
+        $this->bannedUntil = $bannedUntil;
         return $this;
     }
 
