@@ -4,8 +4,10 @@ namespace App\Repository;
 
 use App\Entity\Image;
 use App\Entity\Publication;
-use App\Entity\User;
+use Symfony\Component\Filesystem\Filesystem;
 use DateTimeImmutable;
+use DateTimeZone;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -15,10 +17,12 @@ use Doctrine\Persistence\ManagerRegistry;
 class PublicationRepository extends ServiceEntityRepository {
 
     private ManagerRegistry $doctrine;
+    private ParameterBagInterface $params;
 
-    public function __construct(ManagerRegistry $registry, ManagerRegistry $doctrine) {
+    public function __construct(ManagerRegistry $registry, ManagerRegistry $doctrine, ParameterBagInterface $params) {
         parent::__construct($registry, Publication::class);
         $this->doctrine = $doctrine;
+        $this->params = $params;
     }
 
     public function create(?User $user, string $description, array $imagePaths): Publication {
@@ -26,7 +30,7 @@ class PublicationRepository extends ServiceEntityRepository {
 
         $publication->setUser($user);
         $publication->setDescription($description);
-        $publication->setCreatedAt(new DateTimeImmutable("now"));
+        $publication->setCreatedAt(new DateTimeImmutable("now", new DateTimeZone("Europe/Paris")));
 
         foreach ($imagePaths as $path) {
             $image = new Image();
@@ -45,13 +49,15 @@ class PublicationRepository extends ServiceEntityRepository {
 
     public function delete(Publication $publication): void {
         $entityManager = $this->doctrine->getManager();
+        $filesystem = new Filesystem();
         $images = $publication->getImages();
-
         foreach ($images as $image) {
-            $path = __DIR__ . '/../../public' . $image->getUrl();
-            @unlink($path);
+            $imagePath = $this->params->get('public_directory') . $image->getUrl();
+            var_dump($imagePath);
+            if ($filesystem->exists($imagePath)) {
+                $filesystem->remove($imagePath);
+            }
         }
-
         $entityManager->remove($publication);
         $entityManager->flush();
     }

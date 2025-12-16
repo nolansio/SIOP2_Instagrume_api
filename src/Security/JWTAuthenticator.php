@@ -12,6 +12,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
+use function Symfony\Component\Clock\now;
 
 class JWTAuthenticator extends AbstractAuthenticator {
 
@@ -37,7 +38,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
             }
 
             $user = $this->userRepository->findOneByUsername($payload['username']);
-            if ($user === null || $user->isBanned()) {
+            if ($user === null || $user->getBannedUntil() > now()) {
                 throw new AuthenticationException('Invalid token');
             }
         } catch (Exception) {

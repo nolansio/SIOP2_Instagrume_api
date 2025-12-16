@@ -4,8 +4,8 @@ namespace App\Repository;
 
 use App\Entity\Image;
 use App\Entity\User;
-
 use App\Service\ImageService;
+use Symfony\Component\Filesystem\Filesystem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -13,6 +13,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -22,12 +23,14 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     private ManagerRegistry $doctrine;
     private UserPasswordHasherInterface $passwordHasher;
     private ImageRepository $imageRepository;
+    private ParameterBagInterface $params;
 
-    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher, ImageRepository $imageRepository) {
+    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher, ImageRepository $imageRepository, ParameterBagInterface $params) {
         parent::__construct($doctrine, User::class);
         $this->doctrine = $doctrine;
         $this->passwordHasher = $passwordHasher;
         $this->imageRepository = $imageRepository;
+        $this->params = $params;
     }
 
     /**
@@ -150,20 +153,22 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function delete(User $user): void {
         $entityManager = $this->doctrine->getManager();
+        $filesystem = new Filesystem();
         $images = $user->getImages();
-
         foreach ($images as $image) {
-            $path = __DIR__ . '/../../public' . $image->getUrl();
-            @unlink($path);
+            $imagePath = $this->params->get('public_directory') . $image->getUrl();
+            var_dump($imagePath);
+            if ($filesystem->exists($imagePath)) {
+                $filesystem->remove($imagePath);
+            }
         }
-
         $entityManager->remove($user);
         $entityManager->flush();
     }
 
-    public function ban(User $user): User {
+    public function updateBannedUntil($user, $value): void {
         $entityManager = $this->doctrine->getManager();
-        $user->setBanned(true);
+        $user->setBannedUntil($value);
         $entityManager->flush();
 
         return $user;
