@@ -90,7 +90,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to ban this user'], 403);
         }
 
-        $this->userRepository->ban($user);
+        $user = $this->userRepository->ban($user);
 
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
@@ -163,7 +163,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to deban this user'], 403);
         }
 
-        $this->userRepository->deban($user);
+        $user = $this->userRepository->deban($user);
 
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);

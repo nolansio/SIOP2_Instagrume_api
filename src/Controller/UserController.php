@@ -404,10 +404,10 @@ class UserController extends AbstractController {
         }
 
         if ($username) {
-            $user = $this->userRepository->updateUsername($username, $user);
+            $user = $this->userRepository->updateUsername($user, $username);
         }
         if ($password) {
-            $user = $this->userRepository->updatePassword($password, $user);
+            $user = $this->userRepository->updatePassword($user, $password);
         }
         if ($avatar) {
             $isFormatOk = $this->userRepository->updateAvatar($user, $avatar);

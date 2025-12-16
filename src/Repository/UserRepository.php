@@ -43,12 +43,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-    public function isLoggable($user, $password): bool {
+    public function isLoggable(User $user, string $password): bool {
         return $this->passwordHasher->isPasswordValid($user, $password);
     }
 
 
-    public function findOneByUsername($username): ?User {
+    public function findOneByUsername(string $username): ?User {
         return $this->createQueryBuilder('u')
             ->andWhere('u.username = :username')
             ->setParameter('username', $username)
@@ -57,7 +57,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         ;
     }
 
-    public function findUsernamesByUsername($username): array {
+    public function findUsernamesByUsername(string $username): array {
         $results = $this->createQueryBuilder('u')
             ->select('u.username')
             ->andWhere('u.username LIKE :username')
@@ -69,7 +69,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return array_column($results, 'username');
     }
 
-    public function updateAvatar($user, UploadedFile $avatar): bool {
+    public function updateAvatar(User $user, UploadedFile $avatar): bool {
         $uploadDir = '../public/images/';
         $fileExt = strtolower($avatar->getClientOriginalExtension());
 
@@ -90,7 +90,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
 
         $entityManager = $this->doctrine->getManager();
-
         $currentImg = $this->imageRepository->findBy(['user' => $user]);
         $newImg = new Image();
 
@@ -114,7 +113,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return true;
     }
 
-    public function create($username, $password): User {
+    public function create(string $username, string $password): User {
         $user = new User();
         $user->setUsername($username);
 
@@ -122,42 +121,47 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $user->setPassword($hashed);
 
         $entityManager = $this->doctrine->getManager();
-
         $entityManager->persist($user);
         $entityManager->flush();
 
         return $user;
     }
 
-    public function update($username, $password, $user): User {
+    public function update(User $user, string $username, string $password): User {
         $user->setUsername($username);
+
         $hashed = $this->passwordHasher->hashPassword($user, $password);
         $user->setPassword($hashed);
-        // $this->upgradePassword($user, $password);
+
         $entityManager = $this->doctrine->getManager();
         $entityManager->persist($user);
         $entityManager->flush();
+
         return $user;
     }
 
-    public function updateUsername($username, $user): User {
+    public function updateUsername(User $user, string $username): User {
         $user->setUsername($username);
+
         $entityManager = $this->doctrine->getManager();
         $entityManager->persist($user);
         $entityManager->flush();
+
         return $user;
     }
 
-    public function updatePassword($password, $user): User {
+    public function updatePassword(User $user, string $password): User {
         $hashed = $this->passwordHasher->hashPassword($user, $password);
         $user->setPassword($hashed);
+
         $entityManager = $this->doctrine->getManager();
         $entityManager->persist($user);
         $entityManager->flush();
+
         return $user;
     }
 
-    public function delete($user): void {
+    public function delete(User $user): void {
         $entityManager = $this->doctrine->getManager();
         $images = $user->getImages();
 
@@ -170,17 +174,20 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $entityManager->flush();
     }
 
-    public function ban($user): void {
+    public function ban(User $user): User {
         $entityManager = $this->doctrine->getManager();
         $user->setBanned(true);
         $entityManager->flush();
+
+        return $user;
     }
 
-    public function deban($user): void {
+    public function deban(User $user): User {
         $entityManager = $this->doctrine->getManager();
         $user->setBanned(false);
         $entityManager->flush();
-    }
 
+        return $user;
+    }
 
 }
