@@ -7,8 +7,6 @@ use App\Repository\PublicationRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
@@ -238,7 +236,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->lock($publication, true);
+        $this->publicationRepository->lock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
@@ -311,7 +309,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'You are not allowed to lock this publication'], 403);
         }
 
-        $this->publicationRepository->delock($publication, true);
+        $this->publicationRepository->delock($publication);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication', 'publication_private']);
         return new JsonResponse($data, 200, [], true);
