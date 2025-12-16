@@ -69,50 +69,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return array_column($results, 'username');
     }
 
-    public function updateAvatar(User $user, UploadedFile $avatar): bool {
-        $uploadDir = '../public/images/';
-        $fileExt = strtolower($avatar->getClientOriginalExtension());
-
-        $extensions = [
-            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif',
-            'svg', 'heic', 'heif', 'ico', 'jfif', 'avif', 'psd', 'raw'
-        ];
-
-        if (!in_array($fileExt, $extensions)) {
-            return false;
-        }
-
-        $name = uniqid().'.png';
-        $destPath = $uploadDir.$name;
-
-        if (!ImageService::compressAndResizeImage($avatar->getPathname(), $destPath, 800, 800, 75)) {
-            return false;
-        }
-
-        $entityManager = $this->doctrine->getManager();
-        $currentImg = $this->imageRepository->findBy(['user' => $user]);
-        $newImg = new Image();
-
-        if ($currentImg) {
-            $currentImg = $currentImg[0];
-
-            if (file_exists($currentImg->getUrl())) {
-                unlink($currentImg->getUrl());
-            }
-
-            $currentImg->setUrl($destPath);
-            $entityManager->persist($currentImg);
-        }
-
-        $newImg->setUrl(str_replace('../public', '', $destPath));
-        $newImg->setDescription($user->getUsername());
-        $newImg->setUser($user);
-        $entityManager->persist($newImg);
-
-        $entityManager->flush();
-        return true;
-    }
-
     public function create(string $username, string $password): User {
         $user = new User();
         $user->setUsername($username);
@@ -159,6 +115,50 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $entityManager->flush();
 
         return $user;
+    }
+
+    public function updateAvatar(User $user, UploadedFile $avatar): bool {
+        $uploadDir = '../public/images/';
+        $fileExt = strtolower($avatar->getClientOriginalExtension());
+
+        $extensions = [
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif',
+            'svg', 'heic', 'heif', 'ico', 'jfif', 'avif', 'psd', 'raw'
+        ];
+
+        if (!in_array($fileExt, $extensions)) {
+            return false;
+        }
+
+        $name = uniqid().'.png';
+        $destPath = $uploadDir.$name;
+
+        if (!ImageService::compressAndResizeImage($avatar->getPathname(), $destPath, 800, 800, 75)) {
+            return false;
+        }
+
+        $entityManager = $this->doctrine->getManager();
+        $currentImg = $this->imageRepository->findBy(['user' => $user]);
+        $newImg = new Image();
+
+        if ($currentImg) {
+            $currentImg = $currentImg[0];
+
+            if (file_exists($currentImg->getUrl())) {
+                unlink($currentImg->getUrl());
+            }
+
+            $currentImg->setUrl($destPath);
+            $entityManager->persist($currentImg);
+        }
+
+        $newImg->setUrl(str_replace('../public', '', $destPath));
+        $newImg->setDescription($user->getUsername());
+        $newImg->setUser($user);
+        $entityManager->persist($newImg);
+
+        $entityManager->flush();
+        return true;
     }
 
     public function delete(User $user): void {
