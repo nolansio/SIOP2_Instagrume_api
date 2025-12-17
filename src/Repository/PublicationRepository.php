@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Image;
 use App\Entity\User;
 use App\Entity\Publication;
+use App\Entity\User;
 use Symfony\Component\Filesystem\Filesystem;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -20,8 +21,8 @@ class PublicationRepository extends ServiceEntityRepository {
     private ManagerRegistry $doctrine;
     private ParameterBagInterface $params;
 
-    public function __construct(ManagerRegistry $registry, ManagerRegistry $doctrine, ParameterBagInterface $params) {
-        parent::__construct($registry, Publication::class);
+    public function __construct(ManagerRegistry $doctrine, ParameterBagInterface $params) {
+        parent::__construct($doctrine, Publication::class);
         $this->doctrine = $doctrine;
         $this->params = $params;
     }
@@ -49,16 +50,17 @@ class PublicationRepository extends ServiceEntityRepository {
     }
 
     public function delete(Publication $publication): void {
-        $entityManager = $this->doctrine->getManager();
         $filesystem = new Filesystem();
         $images = $publication->getImages();
+
         foreach ($images as $image) {
             $imagePath = $this->params->get('public_directory') . $image->getUrl();
-            var_dump($imagePath);
             if ($filesystem->exists($imagePath)) {
                 $filesystem->remove($imagePath);
             }
         }
+
+        $entityManager = $this->doctrine->getManager();
         $entityManager->remove($publication);
         $entityManager->flush();
     }

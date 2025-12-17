@@ -319,23 +319,14 @@ class CommentController extends AbstractController {
     #[OA\Delete(
         path: '/api/comments/id/{id}',
         summary: "Supprimer un commentaire par son ID",
-        description: "Supprimer commentaire par son ID",
+        description: "Suppression d'un commentaire par son ID",
         tags: ['Commentaire'],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Commentaire récupéré avec succès',
+                description: 'Commentaire supprimé avec succès',
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer', example: 1),
-                        new OA\Property(property: 'content', type: 'string', example: "J'aime bien la seconde image"),
-                        new OA\Property(property: 'created_at', type: 'string', example: '2025-12-01 11:59:33'),
-                        new OA\Property(property: 'original_comment', type: 'string', example: null),
-                        new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'likes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: [])
-                    ]
+                    properties: []
                 )
             ),
             new OA\Response(

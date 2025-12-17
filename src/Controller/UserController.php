@@ -37,7 +37,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -75,7 +75,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -126,7 +126,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -222,7 +222,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -308,7 +308,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -444,15 +444,6 @@ class UserController extends AbstractController {
                 )
             ),
             new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
-                    ]
-                )
-            ),
-            new OA\Response(
                 response: 401,
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
@@ -482,11 +473,8 @@ class UserController extends AbstractController {
         ]
     )]
     public function delete(int $id): JsonResponse {
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' required"], 400);
-        }
-
         $user = $this->userRepository->find($id);
+
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
         }
@@ -498,6 +486,7 @@ class UserController extends AbstractController {
         if (!$isCurrentUser && !$isMod) {
             return new JsonResponse(['error' => 'You are not allowed to delete this user'], 403);
         }
+
         $this->userRepository->delete($user);
         return new JsonResponse([], 200);
     }
@@ -521,7 +510,7 @@ class UserController extends AbstractController {
                         new OA\Property(property: 'dislikes', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
                         new OA\Property(property: 'comments', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),

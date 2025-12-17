@@ -5,7 +5,7 @@ namespace App\Repository;
 use App\Entity\Image;
 use App\Entity\User;
 use App\Service\ImageService;
-use Symfony\Component\Filesystem\Filesystem;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -13,7 +13,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -22,15 +21,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     private ManagerRegistry $doctrine;
     private UserPasswordHasherInterface $passwordHasher;
-    private ImageRepository $imageRepository;
-    private ParameterBagInterface $params;
 
-    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher, ImageRepository $imageRepository, ParameterBagInterface $params) {
+    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher) {
         parent::__construct($doctrine, User::class);
         $this->doctrine = $doctrine;
         $this->passwordHasher = $passwordHasher;
-        $this->imageRepository = $imageRepository;
-        $this->params = $params;
     }
 
     /**
@@ -131,19 +126,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         );
 
         $entityManager = $this->doctrine->getManager();
-        $avatars = $this->imageRepository->findBy(['user' => $user]);
+        $images = $user->getImages();
 
-        if ($avatars) {
-            foreach ($avatars as $image) {
-                @unlink('../public/'.$image->getUrl());
-                $entityManager->remove($image);
-            }
+        foreach ($images as $image) {
+            @unlink('../public/'.$image->getUrl());
+            $entityManager->remove($image);
         }
 
         $newAvatar = new Image();
         $newAvatar->setUrl(str_replace('../public', '', $path));
         $newAvatar->setDescription($user->getUsername());
-        $newAvatar->setUser($user);
+        $user->addImage($newAvatar);
 
         $entityManager->persist($newAvatar);
         $entityManager->flush();
@@ -153,22 +146,22 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function delete(User $user): void {
         $entityManager = $this->doctrine->getManager();
-        $filesystem = new Filesystem();
         $images = $user->getImages();
+
         foreach ($images as $image) {
-            $imagePath = $this->params->get('public_directory') . $image->getUrl();
-            if ($filesystem->exists($imagePath)) {
-                $filesystem->remove($imagePath);
-            }
+            @unlink('../public/'.$image->getUrl());
+            $entityManager->remove($image);
         }
+
         $entityManager->remove($user);
         $entityManager->flush();
     }
 
-    public function updateBannedUntil($user, $value): User {
+    public function updateBannedUntil(User $user, DateTime $date): User {
         $entityManager = $this->doctrine->getManager();
-        $user->setBannedUntil($value);
+        $user->setBannedUntil($date);
         $entityManager->flush();
+
         return $user;
     }
 

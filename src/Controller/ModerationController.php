@@ -11,36 +11,38 @@ use App\Service\JsonConverter;
 use DateTime;
 use DateTimeZone;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Clock\ClockInterface;
 use OpenApi\Attributes as OA;
-use Doctrine\Persistence\ManagerRegistry;
-use function Symfony\Component\Clock\now;
 
 class ModerationController extends AbstractController {
 
     private JsonConverter $jsonConverter;
     private UserRepository $userRepository;
     private PublicationRepository $publicationRepository;
+    private ClockInterface $clock;
 
-    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository, PublicationRepository $publicationRepository) {
+    public function __construct(JsonConverter $jsonConverter, UserRepository $userRepository, PublicationRepository $publicationRepository, ClockInterface $clock) {
         $this->jsonConverter = $jsonConverter;
         $this->userRepository = $userRepository;
         $this->publicationRepository = $publicationRepository;
+        $this->clock = $clock;
     }
 
     #[Route('/api/users/ban', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/users/ban',
-        summary: "Bannir un utilisateur par son ID",
-        description: "Bannissement d'un utilisateur par son ID",
+        summary: "Bannir un utilisateur en jours",
+        description: "Bannissement d'un utilisateur en jours",
         tags: ['Moderation'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['user_id', 'banDurationDays'],
+                required: ['id', 'duration'],
                 properties: [
-                    new OA\Property(property: 'user_id', type: 'int', example: 1),
-                    new OA\Property(property: 'banDurationDays', type: 'int', example: 1)
+                    new OA\Property(property: 'id', type: 'int', example: 1),
+                    new OA\Property(property: 'duration', type: 'int', example: 1)
                 ]
             )
         ),
@@ -50,7 +52,20 @@ class ModerationController extends AbstractController {
                 description: 'Utilisateur banni avec succès',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'user_id' and 'banDurationDays' required")
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'user'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'banned_until', type: 'string', example: '2025-12-25 23:59:59')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Mauvaise requête',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id' and 'duration' required")
                     ]
                 )
             ),
@@ -84,16 +99,15 @@ class ModerationController extends AbstractController {
         ]
     )]
     public function ban(Request $request): JsonResponse {
-        
-        $json = $request->getContent();
-        $data = json_decode($json, true);
-        $id = $data["user_id"];
-        $banDurationDays = $data["banDurationDays"];
-        if (!$id || !$banDurationDays) {
-            return new JsonResponse(['error' => "Parameter 'user_id' and 'banDurationDays' required"], 400);
-        }
-        $user = $this->userRepository->find($id);
+        $data = json_decode($request->getContent(), true);
+        $id = $data['id'] ?? null;
+        $duration = $data['duration'] ?? null;
 
+        if (!$id || !$duration) {
+            return new JsonResponse(['error' => "Parameter 'id' and 'duration' required"], 400);
+        }
+
+        $user = $this->userRepository->find($id);
         if (!$user) {
             return new JsonResponse(['error' => "User not found"], 404);
         }
@@ -108,10 +122,13 @@ class ModerationController extends AbstractController {
         if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin)) || ($userIsAdmin)) {
             return new JsonResponse(['error' => 'You are not allowed to ban this user'], 403);
         }
+
         $date = new DateTime('now', new DateTimeZone('Europe/Paris'));
-        $interval = '+' . $banDurationDays . ' days';
+        $interval = '+' . $duration . ' days';
         $date->modify($interval);
-        $this->userRepository->updateBannedUntil($user, value: $date);
+
+        $this->userRepository->updateBannedUntil($user, $date);
+
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
@@ -132,7 +149,7 @@ class ModerationController extends AbstractController {
                         new OA\Property(property: 'username', type: 'string', example: 'user'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object'), example: ['ROLE_USER']),
                         new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'is_banned', type: 'boolean', example: false)
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
                     ]
                 )
             ),
@@ -165,10 +182,10 @@ class ModerationController extends AbstractController {
             ),
             new OA\Response(
                 response: 409,
-                description: 'Confict',
+                description: 'Conflict',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'This user is already unbanned')
+                        new OA\Property(property: 'error', type: 'string', example: 'User not banned')
                     ]
                 )
             )
@@ -191,8 +208,9 @@ class ModerationController extends AbstractController {
         if ((!$isMod && !$isAdmin) || ($isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin)) || ($userIsAdmin)) {
             return new JsonResponse(['error' => 'You are not allowed to deban this user'], 403);
         }
-        if ($user->getBannedUntil() < now()) {
-            return new JsonResponse(['error' => 'This user is already unbanned'], 409);
+
+        if ($user->getBannedUntil() < $this->clock->now()) {
+            return new JsonResponse(['error' => "User not banned"], 409);
         }
 
         $this->userRepository->updateBannedUntil($user, new DateTime('1970-01-01 00:00:00', new DateTimeZone('Europe/Paris')));
