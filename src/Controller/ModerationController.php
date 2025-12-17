@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
+use Symfony\Component\HttpFoundation\Request;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
 use DateTime;
@@ -81,7 +83,7 @@ class ModerationController extends AbstractController {
             )
         ]
     )]
-    public function ban(Request $request): Response {
+    public function ban(Request $request): JsonResponse {
         
         $json = $request->getContent();
         $data = json_decode($json, true);
