@@ -161,7 +161,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $images = $user->getImages();
         foreach ($images as $image) {
             $imagePath = $this->params->get('public_directory') . $image->getUrl();
-            var_dump($imagePath);
             if ($filesystem->exists($imagePath)) {
                 $filesystem->remove($imagePath);
             }
