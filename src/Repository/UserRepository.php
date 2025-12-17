@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Image;
 use App\Entity\User;
 use App\Service\ImageService;
+use DateTime;
 use Symfony\Component\Filesystem\Filesystem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -131,19 +132,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         );
 
         $entityManager = $this->doctrine->getManager();
-        $avatars = $this->imageRepository->findBy(['user' => $user]);
+        $images = $user->getImages();
 
-        if ($avatars) {
-            foreach ($avatars as $image) {
-                @unlink('../public/'.$image->getUrl());
-                $entityManager->remove($image);
-            }
+        foreach ($images as $image) {
+            @unlink('../public/'.$image->getUrl());
+            $entityManager->remove($image);
         }
 
         $newAvatar = new Image();
         $newAvatar->setUrl(str_replace('../public', '', $path));
         $newAvatar->setDescription($user->getUsername());
-        $newAvatar->setUser($user);
+        $user->addImage($newAvatar);
 
         $entityManager->persist($newAvatar);
         $entityManager->flush();
@@ -153,30 +152,20 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function delete(User $user): void {
         $entityManager = $this->doctrine->getManager();
-        $filesystem = new Filesystem();
         $images = $user->getImages();
+
         foreach ($images as $image) {
-            $imagePath = $this->params->get('public_directory') . $image->getUrl();
-            var_dump($imagePath);
-            if ($filesystem->exists($imagePath)) {
-                $filesystem->remove($imagePath);
-            }
+            @unlink('../public/'.$image->getUrl());
+            $entityManager->remove($image);
         }
+
         $entityManager->remove($user);
         $entityManager->flush();
     }
 
-    public function updateBannedUntil($user, $value): void {
+    public function updateBannedUntil(User $user, DateTime $date): User {
         $entityManager = $this->doctrine->getManager();
-        $user->setBannedUntil($value);
-        $entityManager->flush();
-
-        return $user;
-    }
-
-    public function deban(User $user): User {
-        $entityManager = $this->doctrine->getManager();
-        $user->setBanned(false);
+        $user->setBannedUntil($date);
         $entityManager->flush();
 
         return $user;
