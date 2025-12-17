@@ -5,13 +5,11 @@ namespace App\Controller;
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
 use Symfony\Component\HttpFoundation\Request;
-
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
 use DateTime;
 use DateTimeZone;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Clock\ClockInterface;
 use OpenApi\Attributes as OA;

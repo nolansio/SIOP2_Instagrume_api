@@ -5,7 +5,6 @@ namespace App\Repository;
 use App\Entity\Image;
 use App\Entity\User;
 use App\Entity\Publication;
-use App\Entity\User;
 use Symfony\Component\Filesystem\Filesystem;
 use DateTimeImmutable;
 use DateTimeZone;
