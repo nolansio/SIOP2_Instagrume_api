@@ -6,7 +6,6 @@ use App\Entity\Image;
 use App\Entity\User;
 use App\Service\ImageService;
 use DateTime;
-use Symfony\Component\Filesystem\Filesystem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -14,7 +13,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -23,15 +21,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     private ManagerRegistry $doctrine;
     private UserPasswordHasherInterface $passwordHasher;
-    private ImageRepository $imageRepository;
-    private ParameterBagInterface $params;
 
-    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher, ImageRepository $imageRepository, ParameterBagInterface $params) {
+    public function __construct(ManagerRegistry $doctrine, UserPasswordHasherInterface $passwordHasher) {
         parent::__construct($doctrine, User::class);
         $this->doctrine = $doctrine;
         $this->passwordHasher = $passwordHasher;
-        $this->imageRepository = $imageRepository;
-        $this->params = $params;
     }
 
     /**

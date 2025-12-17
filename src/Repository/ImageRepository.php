@@ -14,7 +14,6 @@ class ImageRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $doctrine)
     {
         parent::__construct($doctrine, Image::class);
-        $this->doctrine = $doctrine;
     }
 
     //    /**
