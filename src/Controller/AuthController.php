@@ -70,7 +70,7 @@ class AuthController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'User is banned until : {Date}')
+                        new OA\Property(property: 'error', type: 'string', example: 'User is banned. Votre compte est banni jusqu\'au 25/12/2024 à 15:30'),
                     ]
                 )
             ),
@@ -105,7 +105,12 @@ class AuthController extends AbstractController {
         }
 
         if ($user->getBannedUntil() > now()) {
-            return new JsonResponse(['error'=> 'User is banned until : ' . $user->getBannedUntil()->format('Y-m-d H:i:s')], 403);
+            $bannedUntil = $user->getBannedUntil()->format('d/m/Y à H:i');
+            return new JsonResponse([
+                'error' => 'User is banned',
+                'banned_until' => $bannedUntil,
+                'message' => "Votre compte est banni jusqu'au {$bannedUntil}"
+            ], 403);
         }
 
         $token = $this->jwtService->encodeToken([
