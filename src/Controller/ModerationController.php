@@ -195,7 +195,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'This user is already unbanned'], 409);
         }
 
-        $this->userRepository->updateBannedUntil($user, new DateTime('now', new DateTimeZone('Europe/Paris')));
+        $this->userRepository->updateBannedUntil($user, new DateTime('1970-01-01 00:00:00', new DateTimeZone('Europe/Paris')));
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
