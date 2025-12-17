@@ -6,6 +6,8 @@ use App\Entity\Comment;
 use App\Entity\Publication;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
+use DateTimeZone;
+
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -25,21 +27,21 @@ class CommentFixtures extends Fixture implements DependentFixtureInterface {
         $comment1 = new Comment();
         $comment1->setUser($userRepository->findOneByUsername("elon"));
         $comment1->setContent("J'aime bien la seconde image");
-        $comment1->setCreatedAt(new DateTimeImmutable("-1 hour"));
+        $comment1->setCreatedAt(new DateTimeImmutable("-1 hour", new DateTimeZone("Europe/Paris")));
         $comment1->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($comment1);
 
         $comment2 = new Comment();
         $comment2->setUser($userRepository->findOneByUsername("albert"));
         $comment2->setContent("Jolie photo !");
-        $comment2->setCreatedAt(new DateTimeImmutable("-2 hour"));
+        $comment2->setCreatedAt(new DateTimeImmutable("-2 hour", new DateTimeZone("Europe/Paris")));
         $comment2->setPublication($this->getReference('publication3', Publication::class));
         $manager->persist($comment2);
 
         $comment3 = new Comment();
         $comment3->setUser($userRepository->findOneByUsername("user"));
         $comment3->setContent("Merci !");
-        $comment3->setCreatedAt(new DateTimeImmutable("now"));
+        $comment3->setCreatedAt(new DateTimeImmutable("now", new DateTimeZone("Europe/Paris")));
         $comment3->setOriginalComment($comment1);
         $manager->persist($comment3);
 
