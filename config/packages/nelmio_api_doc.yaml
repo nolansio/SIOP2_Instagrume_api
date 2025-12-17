@@ -12,6 +12,14 @@ nelmio_api_doc:
                     bearerFormat: JWT
         security:
             -   bearerAuth: []
+        tags:
+            -   name: Authentification
+            -   name: Utilisateur
+            -   name: Publication
+            -   name: Commentaire
+            -   name: Like
+            -   name: Dislike
+            -   name: Moderation
     areas: # to filter documented areas
         path_patterns:
             - ^/api(?!/doc$) # Accepts routes under /api except /api/doc

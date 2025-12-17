@@ -99,7 +99,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getById($id): JsonResponse {
+    public function get(int $id): JsonResponse {
         $user = $this->userRepository->find($id);
 
         if (!$user) {
@@ -150,7 +150,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function getByUsername($username): JsonResponse {
+    public function getByUsername(string $username): JsonResponse {
         $user = $this->userRepository->findOneByUsername($username);
 
         if (!$user) {
@@ -186,7 +186,7 @@ class UserController extends AbstractController {
             ),
         ]
     )]
-    public function getUsernamesByUsername($username): JsonResponse {
+    public function getUsernamesByUsername(string $username): JsonResponse {
         $usernames = $this->userRepository->findUsernamesByUsername($username);
 
         $data = $this->jsonConverter->encodeToJson($usernames, ['user']);
@@ -404,16 +404,24 @@ class UserController extends AbstractController {
         }
 
         if ($username) {
-            $user = $this->userRepository->updateUsername($username, $user);
+            $user = $this->userRepository->updateUsername($user, $username);
         }
         if ($password) {
-            $user = $this->userRepository->updatePassword($password, $user);
+            $user = $this->userRepository->updatePassword($user, $password);
         }
         if ($avatar) {
-            $isFormatOk = $this->userRepository->updateAvatar($this->getUser(), $avatar);
-            if (!$isFormatOk) {
+            $fileExt = strtolower($avatar->getClientOriginalExtension());
+
+            $extensions = [
+                'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif',
+                'svg', 'heic', 'heif', 'ico', 'jfif', 'avif', 'psd', 'raw'
+            ];
+
+            if (!in_array($fileExt, $extensions)) {
                 return new JsonResponse(['error' => "Bad image extension"], 415);
             }
+
+            $user = $this->userRepository->updateAvatar($user, $avatar);
         }
 
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
@@ -473,7 +481,7 @@ class UserController extends AbstractController {
             )
         ]
     )]
-    public function delete($id): JsonResponse {
+    public function delete(int $id): JsonResponse {
         if (!$id) {
             return new JsonResponse(['error' => "Parameters 'id' required"], 400);
         }

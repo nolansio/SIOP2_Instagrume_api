@@ -25,7 +25,7 @@ class PublicationRepository extends ServiceEntityRepository {
         $this->params = $params;
     }
 
-    public function create($description, $user, $imagePaths): Publication {
+    public function create(?User $user, string $description, array $imagePaths): Publication {
         $publication = new Publication();
 
         $publication->setUser($user);
@@ -47,7 +47,7 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
-    public function delete($publication): void {
+    public function delete(Publication $publication): void {
         $entityManager = $this->doctrine->getManager();
         $filesystem = new Filesystem();
         $images = $publication->getImages();
@@ -62,16 +62,28 @@ class PublicationRepository extends ServiceEntityRepository {
         $entityManager->flush();
     }
 
-    public function update($publication, $description): void {
+    public function update(Publication $publication, string $description): Publication {
         $entityManager = $this->doctrine->getManager();
         $publication->setDescription($description);
         $entityManager->flush();
+
+        return $publication;
     }
 
-    public function updateIsLocked($publication, $value): void {
+    public function lock(Publication $publication): Publication {
         $entityManager = $this->doctrine->getManager();
-        $publication->setIsLocked($value);
+        $publication->setLocked(true);
         $entityManager->flush();
+
+        return $publication;
+    }
+
+    public function delock(Publication $publication): Publication {
+        $entityManager = $this->doctrine->getManager();
+        $publication->setLocked(false);
+        $entityManager->flush();
+
+        return $publication;
     }
 
 }
