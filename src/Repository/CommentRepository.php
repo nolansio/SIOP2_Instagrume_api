@@ -6,6 +6,7 @@ use App\Entity\Comment;
 use App\Entity\Publication;
 use App\Entity\User;
 use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,7 +28,7 @@ class CommentRepository extends ServiceEntityRepository {
         $comment->setContent($content);
         $comment->setPublication($publication);
         $comment->setOriginalComment($original_comment);
-        $comment->setCreatedAt(new DateTimeImmutable("now"));
+        $comment->setCreatedAt(new DateTimeImmutable("now", new DateTimeZone("Europe/Paris")));
         $comment->setUser($user);
         $entityManager = $this->doctrine->getManager();
         $entityManager->persist($comment);
