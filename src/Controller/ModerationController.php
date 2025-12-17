@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
+use Symfony\Component\HttpFoundation\Request;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Service\JsonConverter;
 use DateTime;
@@ -211,8 +213,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => "User not banned"], 409);
         }
 
-        $this->userRepository->updateBannedUntil($user, new DateTime('now', new DateTimeZone('Europe/Paris')));
-
+        $this->userRepository->updateBannedUntil($user, new DateTime('1970-01-01 00:00:00', new DateTimeZone('Europe/Paris')));
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
