@@ -157,7 +157,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $images = $user->getImages();
         foreach ($images as $image) {
             $imagePath = $this->params->get('public_directory') . $image->getUrl();
-            var_dump($imagePath);
             if ($filesystem->exists($imagePath)) {
                 $filesystem->remove($imagePath);
             }
@@ -166,11 +165,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $entityManager->flush();
     }
 
-    public function updateBannedUntil($user, $value): void {
+    public function updateBannedUntil($user, $value): User {
         $entityManager = $this->doctrine->getManager();
         $user->setBannedUntil($value);
         $entityManager->flush();
-
         return $user;
     }
 
