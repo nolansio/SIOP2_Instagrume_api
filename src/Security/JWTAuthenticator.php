@@ -42,7 +42,7 @@ class JWTAuthenticator extends AbstractAuthenticator {
                 throw new AuthenticationException('Invalid token');
             }
             if ($user->getBannedUntil() > now()) {
-                throw new AuthenticationException('User is banned until : ' . $user->getBannedUntil());
+                throw new AuthenticationException('User is banned until : ' . $user->getBannedUntil()->format('Y-m-d H:i:s'));
             }
         } catch (Exception) {
             throw new AuthenticationException('Invalid token');
