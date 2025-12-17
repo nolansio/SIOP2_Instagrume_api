@@ -38,8 +38,11 @@ class JWTAuthenticator extends AbstractAuthenticator {
             }
 
             $user = $this->userRepository->findOneByUsername($payload['username']);
-            if ($user === null || $user->getBannedUntil() > now()) {
+            if ($user === null) {
                 throw new AuthenticationException('Invalid token');
+            }
+            if ($user->getBannedUntil() > now()) {
+                throw new AuthenticationException('User is banned until : ' . $user->getBannedUntil());
             }
         } catch (Exception) {
             throw new AuthenticationException('Invalid token');

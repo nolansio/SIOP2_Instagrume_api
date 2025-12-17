@@ -28,9 +28,9 @@ class ModerationController extends AbstractController {
         $this->publicationRepository = $publicationRepository;
     }
 
-    #[Route('/api/users/ban/id/{id}', methods: ['PUT'])]
+    #[Route('/api/users/ban', methods: ['PUT'])]
     #[OA\Put(
-        path: '/api/users/ban/id/{id}',
+        path: '/api/users/ban',
         summary: "Bannir un utilisateur par son ID",
         description: "Bannissement d'un utilisateur par son ID",
         tags: ['Moderation'],
@@ -195,7 +195,7 @@ class ModerationController extends AbstractController {
             return new JsonResponse(['error' => 'This user is already unbanned'], 409);
         }
 
-        $this->userRepository->updateBannedUntil($user, new DateTime('now', new DateTimeZone('Europe/Paris')));
+        $this->userRepository->updateBannedUntil($user, new DateTime('@0', new DateTimeZone('Europe/Paris')));
         $data = $this->jsonConverter->encodeToJson($user, ['user', 'user_private']);
         return new JsonResponse($data, 200, [], true);
     }
