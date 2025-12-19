@@ -94,7 +94,7 @@ class DislikeController extends AbstractController {
         }
 
         if ($publication->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to dislike your own publication'], 404);
+            return new JsonResponse(['error' => 'You are not allowed to dislike your own publication'], 403);
         }
 
         $dislike = $this->dislikeRepository->create($this->getUser(), $publication, null);
@@ -181,7 +181,7 @@ class DislikeController extends AbstractController {
         }
 
         if ($comment->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to dislike your own comment'], 404);
+            return new JsonResponse(['error' => 'You are not allowed to dislike your own comment'], 403);
         }
 
         $dislike = $this->dislikeRepository->create($this->getUser(), null, $comment);
