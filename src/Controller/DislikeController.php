@@ -53,6 +53,15 @@ class DislikeController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own publication')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -67,15 +76,6 @@ class DislikeController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own publication')
                     ]
                 )
             )
@@ -140,6 +140,15 @@ class DislikeController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own publication')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -154,15 +163,6 @@ class DislikeController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own comment')
                     ]
                 )
             )

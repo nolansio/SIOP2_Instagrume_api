@@ -53,6 +53,15 @@ class LikeController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own publication')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -67,15 +76,6 @@ class LikeController extends AbstractController {
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own publication')
                     ]
                 )
             )
@@ -140,6 +140,15 @@ class LikeController extends AbstractController {
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own publication')
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 404,
                 description: 'Introuvable',
                 content: new OA\JsonContent(
@@ -156,15 +165,6 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
                     ]
                 )
-            ),
-            new OA\Response(
-                response: 403,
-                description: 'Refusé',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own comment')
-                    ]
-                )
             )
         ]
     )]
@@ -179,7 +179,7 @@ class LikeController extends AbstractController {
         if ($this->likeRepository->findLikeByUserAndComment($currentUser, $comment)) {
             return new JsonResponse(['error' => 'You already liked it'], 409);
         }
-        
+
         if ($comment->getUser() === $currentUser) {
             return new JsonResponse(['error' => 'You are not allowed to like your own comment'], 403);
         }
