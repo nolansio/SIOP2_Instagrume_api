@@ -69,6 +69,15 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own publication')
+                    ]
+                )
             )
         ]
     )]
@@ -82,6 +91,10 @@ class LikeController extends AbstractController {
         $currentUser = $this->getUser();
         if ($this->likeRepository->findLikeByUserAndPublication($currentUser, $publication)) {
             return new JsonResponse(['error' => 'You already liked it'], 409);
+        }
+
+        if ($publication->getUser() === $currentUser) {
+            return new JsonResponse(['error' => 'You are not allowed to like your own publication'], 404);
         }
 
         $like = $this->likeRepository->create($this->getUser(), $publication, null);
@@ -143,6 +156,15 @@ class LikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You already liked it')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own comment')
+                    ]
+                )
             )
         ]
     )]
@@ -156,6 +178,10 @@ class LikeController extends AbstractController {
         $currentUser = $this->getUser();
         if ($this->likeRepository->findLikeByUserAndComment($currentUser, $comment)) {
             return new JsonResponse(['error' => 'You already liked it'], 409);
+        }
+        
+        if ($comment->getUser() === $currentUser) {
+            return new JsonResponse(['error' => 'You are not allowed to like your own comment'], 404);
         }
 
         $like = $this->likeRepository->create($this->getUser(), null, $comment);

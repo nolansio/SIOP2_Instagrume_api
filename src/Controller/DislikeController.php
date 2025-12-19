@@ -69,6 +69,15 @@ class DislikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own publication')
+                    ]
+                )
             )
         ]
     )]
@@ -82,6 +91,10 @@ class DislikeController extends AbstractController {
         $currentUser = $this->getUser();
         if ($this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication)) {
             return new JsonResponse(['error' => 'You already disliked it'], 409);
+        }
+
+        if ($publication->getUser() === $currentUser) {
+            return new JsonResponse(['error' => 'You are not allowed to dislike your own publication'], 404);
         }
 
         $dislike = $this->dislikeRepository->create($this->getUser(), $publication, null);
@@ -143,6 +156,15 @@ class DislikeController extends AbstractController {
                         new OA\Property(property: 'error', type: 'string', example: 'You already disliked it')
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Refusé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own comment')
+                    ]
+                )
             )
         ]
     )]
@@ -156,6 +178,10 @@ class DislikeController extends AbstractController {
         $currentUser = $this->getUser();
         if ($this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment)) {
             return new JsonResponse(['error' => 'You already disliked it'], 409);
+        }
+
+        if ($comment->getUser() === $currentUser) {
+            return new JsonResponse(['error' => 'You are not allowed to dislike your own comment'], 404);
         }
 
         $dislike = $this->dislikeRepository->create($this->getUser(), null, $comment);
