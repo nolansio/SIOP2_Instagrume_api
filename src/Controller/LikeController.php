@@ -6,24 +6,24 @@ use App\Repository\LikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
 use App\Service\JsonConverter;
+use App\Trait\OwnershipCheckTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
-class LikeController extends AbstractController {
+class LikeController extends AbstractController
+{
 
-    private JsonConverter $jsonConverter;
-    private PublicationRepository $publicationRepository;
-    private LikeRepository $likeRepository;
-    private CommentRepository $commentRepository;
+    use OwnershipCheckTrait;
 
-    public function __construct(JsonConverter $jsonConverter, LikeRepository $likeRepository, PublicationRepository $publicationRepository, CommentRepository $commentRepository) {
-        $this->jsonConverter = $jsonConverter;
-        $this->publicationRepository = $publicationRepository;
-        $this->likeRepository = $likeRepository;
-        $this->commentRepository = $commentRepository;
-    }
+    public function __construct(
+        private readonly JsonConverter $jsonConverter,
+        private readonly LikeRepository $likeRepository,
+        private readonly PublicationRepository $publicationRepository,
+        private readonly CommentRepository $commentRepository
+    ) {}
 
     #[Route('/api/likes/publication/id/{id}', methods: ['POST'])]
     #[OA\Post(
@@ -81,26 +81,26 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function likePublication(int $id): JsonResponse {
-        $publication = $this->publicationRepository->find($id);
-
-        if (!$publication) {
-            return new JsonResponse(['error' => 'Publication not found'], 404);
+    public function likePublication(int $id): JsonResponse
+    {
+        if (!($publication = $this->publicationRepository->find($id))) {
+            return $this->json(['error' => 'Publication not found'], Response::HTTP_NOT_FOUND);
         }
 
         $currentUser = $this->getUser();
+
         if ($this->likeRepository->findLikeByUserAndPublication($currentUser, $publication)) {
-            return new JsonResponse(['error' => 'You already liked it'], 409);
+            return $this->json(['error' => 'You already liked it'], Response::HTTP_CONFLICT);
         }
 
-        if ($publication->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to like your own publication'], 403);
+        if ($this->isOwnContent($publication->getUser())) {
+            return $this->json(['error' => 'You are not allowed to like your own publication'], Response::HTTP_FORBIDDEN);
         }
 
-        $like = $this->likeRepository->create($this->getUser(), $publication, null);
+        $like = $this->likeRepository->create($currentUser, $publication, null);
 
         $data = $this->jsonConverter->encodeToJson($like);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/likes/comment/id/{id}', methods: ['POST'])]
@@ -117,16 +117,7 @@ class LikeController extends AbstractController {
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'publication', type: 'array', items: new OA\Items(type: 'object'), example: [])
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
+                        new OA\Property(property: 'comment', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -144,7 +135,7 @@ class LikeController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own publication')
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to like your own comment')
                     ]
                 )
             ),
@@ -168,26 +159,26 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function likeComment(int $id): JsonResponse {
-        $comment = $this->commentRepository->find($id);
-
-        if (!$comment) {
-            return new JsonResponse(['error' => 'Comment not found'], 404);
+    public function likeComment(int $id): JsonResponse
+    {
+        if (!($comment = $this->commentRepository->find($id))) {
+            return $this->json(['error' => 'Comment not found'], Response::HTTP_NOT_FOUND);
         }
 
         $currentUser = $this->getUser();
+
         if ($this->likeRepository->findLikeByUserAndComment($currentUser, $comment)) {
-            return new JsonResponse(['error' => 'You already liked it'], 409);
+            return $this->json(['error' => 'You already liked it'], Response::HTTP_CONFLICT);
         }
 
-        if ($comment->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to like your own comment'], 403);
+        if ($this->isOwnContent($comment->getUser())) {
+            return $this->json(['error' => 'You are not allowed to like your own comment'], Response::HTTP_FORBIDDEN);
         }
 
-        $like = $this->likeRepository->create($this->getUser(), null, $comment);
+        $like = $this->likeRepository->create($currentUser, null, $comment);
 
         $data = $this->jsonConverter->encodeToJson($like);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/likes/id/{id}', methods: ['DELETE'])]
@@ -202,15 +193,6 @@ class LikeController extends AbstractController {
                 description: 'Like supprimé avec succès',
                 content: new OA\JsonContent(
                     properties: []
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
-                    ]
                 )
             ),
             new OA\Response(
@@ -242,19 +224,17 @@ class LikeController extends AbstractController {
             )
         ]
     )]
-    public function delete(int $id): JsonResponse {
-        $like = $this->likeRepository->find($id);
-        if (!$like) {
-            return new JsonResponse(['error' => 'Like not found'], 404);
+    public function delete(int $id): JsonResponse
+    {
+        if (!($like = $this->likeRepository->find($id))) {
+            return $this->json(['error' => 'Like not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $currentUser = $this->getUser();
-        if ($currentUser->getUserIdentifier() !== $like->getUser()->getUserIdentifier()) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this like'], 403);
+        if (!$this->isOwnContent($like->getUser())) {
+            return $this->json(['error' => 'You are not allowed to delete this like'], Response::HTTP_FORBIDDEN);
         }
 
         $this->likeRepository->delete($like);
-        return new JsonResponse([], 200);
+        return $this->json([], Response::HTTP_OK);
     }
-
 }
