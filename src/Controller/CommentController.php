@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Comment;
 use App\Repository\CommentRepository;
 use App\Repository\UserRepository;
 use App\Repository\PublicationRepository;
@@ -9,30 +10,45 @@ use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use OpenApi\Attributes as OA;
 
-class CommentController extends AbstractController {
+class CommentController extends AbstractController
+{
 
-    private CommentRepository $commentRepository;
-    private PublicationRepository $publicationRepository;
-    private JsonConverter $jsonConverter;
-    private UserRepository $userRepository;
-
-
-    public function __construct(CommentRepository $commentRepository, JsonConverter $jsonConverter, PublicationRepository $publicationRepository, UserRepository $userRepository) {
-        $this->commentRepository = $commentRepository;
-        $this->publicationRepository = $publicationRepository;
-        $this->jsonConverter = $jsonConverter;
-        $this->userRepository = $userRepository;
-    }
+    public function __construct(
+        private readonly CommentRepository $commentRepository,
+        private readonly PublicationRepository $publicationRepository,
+        private readonly JsonConverter $jsonConverter,
+        private readonly UserRepository $userRepository,
+        private readonly TagAwareCacheInterface $cacheComments
+    ) {}
 
     #[Route('/api/comments', methods: ['GET'])]
     #[OA\Get(
         path: '/api/comments',
         summary: "Récupérer tout les commentaires",
-        description: "Récupération de tout les commentaires",
+        description: "Récupération de tout les commentaires avec pagination",
         tags: ['Commentaire'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Numéro de page',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 1, example: 1)
+            ),
+            new OA\Parameter(
+                name: 'limit',
+                in: 'query',
+                description: 'Nombre d\'éléments par page (max 100)',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 50, example: 50)
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -61,11 +77,27 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function getAll(): JsonResponse {
-        $comments = $this->commentRepository->findAll();
+    public function getAll(Request $request): JsonResponse
+    {
+        $page = max(1, (int)$request->query->get('page', 1));
+        $limit = min(100, max(1, (int)$request->query->get('limit', 50)));
 
-        $data = $this->jsonConverter->encodeToJson($comments, ['user']);
-        return new JsonResponse($data, 200, [], true);
+        $cacheKey = "comments_page_{$page}_limit_{$limit}";
+
+        $result = $this->cacheComments->get($cacheKey, function (ItemInterface $item) use ($page, $limit) {
+            $item->expiresAfter(120); // 2 minutes
+            $item->tag(['comments']);
+            return $this->commentRepository->findPaginated($page, $limit);
+        });
+
+        $data = $this->jsonConverter->encodeToJson($result['data'], ['user']);
+
+        return new JsonResponse($data, Response::HTTP_OK, [
+            'X-Total-Count' => $result['total'],
+            'X-Total-Pages' => $result['pages'],
+            'X-Current-Page' => $result['current_page'],
+            'X-Per-Page' => $result['per_page']
+        ], true);
     }
 
     #[Route('/api/comments/id/{id}', methods: ['GET'])]
@@ -111,15 +143,14 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function get(int $id): JsonResponse {
-        $comment = $this->commentRepository->find($id);
-
-        if (!$comment) {
-            return new JsonResponse(['error' => 'Comment not found'], 404);
+    public function get(int $id): JsonResponse
+    {
+        if (!($comment = $this->commentRepository->findOneByIdOptimized($id))) {
+            return $this->json(['error' => 'Comment not found'], Response::HTTP_NOT_FOUND);
         }
 
         $data = $this->jsonConverter->encodeToJson($comment, ['user']);
-        return new JsonResponse($data, 200, [], true);
+        return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/comments', methods: ['POST'])]
@@ -185,36 +216,35 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function insert(Request $request): JsonResponse {
+    public function insert(Request $request): JsonResponse
+    {
         $data = json_decode($request->getContent(), true);
-        $id = $data['id'] ?? null;
-        $content = $data['content'] ?? null;
-        $original_comment_id = $data['original_comment'] ?? 0;
 
-        if (!$content || !$id) {
-            return new JsonResponse(['error' => "Parameters 'id' and 'content' required"], 400);
+        if (!($content = $data['content'] ?? null) || !($id = $data['id'] ?? null)) {
+            return $this->json(['error' => "Parameters 'id' and 'content' required"], Response::HTTP_BAD_REQUEST);
         }
 
-        $publication = $this->publicationRepository->find($id);
-        if (!$publication) {
-            return new JsonResponse(['error' => "Publication not found"], 400);
+        if (!($publication = $this->publicationRepository->find($id))) {
+            return $this->json(['error' => "Publication not found"], Response::HTTP_NOT_FOUND);
         }
 
         $original_comment = null;
-        if ($original_comment_id) {
-            $original_comment = $this->commentRepository->find($original_comment_id);
-            if (!$original_comment) {
-                return new JsonResponse(['error' => "Comment not found"], 404);
+        if ($original_comment_id = $data['original_comment'] ?? null) {
+            if (!($original_comment = $this->commentRepository->find($original_comment_id))) {
+                return $this->json(['error' => "Comment not found"], Response::HTTP_NOT_FOUND);
             }
         }
+
         if ($publication->isLocked() || ($original_comment && $original_comment->getPublication()->isLocked())) {
-            return new JsonResponse(['error' => "Publication is locked"], 423);
+            return $this->json(['error' => "Publication is locked"], Response::HTTP_LOCKED);
         }
 
         $comment = $this->commentRepository->create($content, $this->getUser(), $publication, $original_comment);
 
+        $this->cacheComments->invalidateTags(['comments']);
+
         $data = $this->jsonConverter->encodeToJson($comment, ['user']);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/comments', methods: ['PUT'])]
@@ -235,7 +265,7 @@ class CommentController extends AbstractController {
         ),
         responses: [
             new OA\Response(
-                response: 201,
+                response: 200,
                 description: 'Commentaire modifié avec succès',
                 content: new OA\JsonContent(
                     properties: [
@@ -273,46 +303,34 @@ class CommentController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example:'You are not allowed to update this comment')
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to update this comment')
                     ]
                 )
             )
         ]
     )]
-    public function update(Request $request): JsonResponse {
+    public function update(Request $request): JsonResponse
+    {
         $data = json_decode($request->getContent(), true);
-        $id = $data['id'] ?? null;
-        $content = $data['content'] ?? null;
 
-        if (!$id || !$content) {
-            return new JsonResponse(['error' => "Parameters 'id' and 'content' required"], 400);
+        if (!($id = $data['id'] ?? null) || !($content = $data['content'] ?? null)) {
+            return $this->json(['error' => "Parameters 'id' and 'content' required"], Response::HTTP_BAD_REQUEST);
         }
 
-        $comment = $this->commentRepository->find($id);
-        if (!$comment) {
-            return new JsonResponse(['error' => "Comment not found"], 404);
+        if (!($comment = $this->commentRepository->find($id))) {
+            return $this->json(['error' => "Comment not found"], Response::HTTP_NOT_FOUND);
         }
 
-        $user = $this->userRepository->find($comment->getUser()->getId());
-        $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
-        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
-        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
-
-        // AS = Auteur suppression | AC = Auteur commentaire
-        // Si :
-        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
-        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre commentaire
-        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
-            return new JsonResponse(['error' => 'You are not allowed to update this comment'], 403);
+        if (!$this->canModifyComment($comment)) {
+            return $this->json(['error' => 'You are not allowed to update this comment'], Response::HTTP_FORBIDDEN);
         }
 
         $comment = $this->commentRepository->update($comment, $content);
 
+        $this->cacheComments->invalidateTags(['comments']);
+
         $data = $this->jsonConverter->encodeToJson($comment, ['user']);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/comments/id/{id}', methods: ['DELETE'])]
@@ -343,7 +361,7 @@ class CommentController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example:'You are not allowed to delete this comment')
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to delete this comment')
                     ]
                 )
             ),
@@ -358,31 +376,50 @@ class CommentController extends AbstractController {
             )
         ]
     )]
-    public function delete(int $id): JsonResponse {
-        $comment = $this->commentRepository->find($id);
-
-        if (!$comment) {
-            return new JsonResponse(['error' => "Comment not found"], 404);
+    public function delete(int $id): JsonResponse
+    {
+        if (!($comment = $this->commentRepository->find($id))) {
+            return $this->json(['error' => "Comment not found"], Response::HTTP_NOT_FOUND);
         }
 
-        $user = $this->userRepository->find($comment->getUser()->getId());
-        $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
-        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
-        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
-
-        // AS = Auteur suppression | AC = Auteur commentaire
-        // Si :
-        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
-        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre commentaire
-        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this comment'], 403);
+        if (!$this->canModifyComment($comment)) {
+            return $this->json(['error' => 'You are not allowed to delete this comment'], Response::HTTP_FORBIDDEN);
         }
 
         $this->commentRepository->delete($comment);
-        return new JsonResponse([], 200);
+
+        $this->cacheComments->invalidateTags(['comments']);
+
+        return $this->json([], Response::HTTP_OK);
     }
 
+    private function canModifyComment(Comment $comment): bool
+    {
+        $currentUser = $this->getUser();
+        $commentAuthor = $comment->getUser();
+
+        $isCurrentUser = $currentUser->getUserIdentifier() === $commentAuthor->getUserIdentifier();
+
+        $currentUserRoles = $currentUser->getRoles();
+        $authorRoles = $commentAuthor->getRoles();
+
+        $isMod = in_array('ROLE_MOD', $currentUserRoles);
+        $isAdmin = in_array('ROLE_ADMIN', $currentUserRoles);
+        $authorIsMod = in_array('ROLE_MOD', $authorRoles);
+        $authorIsAdmin = in_array('ROLE_ADMIN', $authorRoles);
+
+        if ($isCurrentUser) {
+            return true;
+        }
+
+        if ($isAdmin) {
+            return true;
+        }
+
+        if ($isMod && !$authorIsMod && !$authorIsAdmin) {
+            return true;
+        }
+
+        return false;
+    }
 }
