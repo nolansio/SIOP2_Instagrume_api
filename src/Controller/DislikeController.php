@@ -6,24 +6,24 @@ use App\Repository\DislikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
 use App\Service\JsonConverter;
+use App\Trait\OwnershipCheckTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Attributes as OA;
 
-class DislikeController extends AbstractController {
+class DislikeController extends AbstractController
+{
 
-    private JsonConverter $jsonConverter;
-    private PublicationRepository $publicationRepository;
-    private DislikeRepository $dislikeRepository;
-    private CommentRepository $commentRepository;
+    use OwnershipCheckTrait;
 
-    public function __construct(JsonConverter $jsonConverter, DislikeRepository $dislikeRepository, PublicationRepository $publicationRepository, CommentRepository $commentRepository) {
-        $this->jsonConverter = $jsonConverter;
-        $this->publicationRepository = $publicationRepository;
-        $this->dislikeRepository = $dislikeRepository;
-        $this->commentRepository = $commentRepository;
-    }
+    public function __construct(
+        private readonly JsonConverter $jsonConverter,
+        private readonly DislikeRepository $dislikeRepository,
+        private readonly PublicationRepository $publicationRepository,
+        private readonly CommentRepository $commentRepository
+    ) {}
 
     #[Route('/api/dislikes/publication/id/{id}', methods: ['POST'])]
     #[OA\Post(
@@ -81,26 +81,26 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function dislikePublication(int $id): JsonResponse {
-        $publication = $this->publicationRepository->find($id);
-
-        if (!$publication) {
-            return new JsonResponse(['error' => 'Publication not found'], 404);
+    public function dislikePublication(int $id): JsonResponse
+    {
+        if (!($publication = $this->publicationRepository->find($id))) {
+            return $this->json(['error' => 'Publication not found'], Response::HTTP_NOT_FOUND);
         }
 
         $currentUser = $this->getUser();
+
         if ($this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication)) {
-            return new JsonResponse(['error' => 'You already disliked it'], 409);
+            return $this->json(['error' => 'You already disliked it'], Response::HTTP_CONFLICT);
         }
 
-        if ($publication->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to dislike your own publication'], 403);
+        if ($this->isOwnContent($publication->getUser())) {
+            return $this->json(['error' => 'You are not allowed to dislike your own publication'], Response::HTTP_FORBIDDEN);
         }
 
-        $dislike = $this->dislikeRepository->create($this->getUser(), $publication, null);
+        $dislike = $this->dislikeRepository->create($currentUser, $publication, null);
 
         $data = $this->jsonConverter->encodeToJson($dislike);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/dislikes/comment/id/{id}', methods: ['POST'])]
@@ -117,16 +117,7 @@ class DislikeController extends AbstractController {
                     properties: [
                         new OA\Property(property: 'id', type: 'integer', example: 1),
                         new OA\Property(property: 'user', type: 'array', items: new OA\Items(type: 'object'), example: []),
-                        new OA\Property(property: 'publication', type: 'array', items: new OA\Items(type: 'object'), example: [])
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
+                        new OA\Property(property: 'comment', type: 'array', items: new OA\Items(type: 'object'), example: [])
                     ]
                 )
             ),
@@ -144,7 +135,7 @@ class DislikeController extends AbstractController {
                 description: 'Refusé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own publication')
+                        new OA\Property(property: 'error', type: 'string', example: 'You are not allowed to dislike your own comment')
                     ]
                 )
             ),
@@ -168,26 +159,26 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function dislikeComment(int $id): JsonResponse {
-        $comment = $this->commentRepository->find($id);
-
-        if (!$comment) {
-            return new JsonResponse(['error' => 'Comment not found'], 404);
+    public function dislikeComment(int $id): JsonResponse
+    {
+        if (!($comment = $this->commentRepository->find($id))) {
+            return $this->json(['error' => 'Comment not found'], Response::HTTP_NOT_FOUND);
         }
 
         $currentUser = $this->getUser();
+
         if ($this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment)) {
-            return new JsonResponse(['error' => 'You already disliked it'], 409);
+            return $this->json(['error' => 'You already disliked it'], Response::HTTP_CONFLICT);
         }
 
-        if ($comment->getUser() === $currentUser) {
-            return new JsonResponse(['error' => 'You are not allowed to dislike your own comment'], 403);
+        if ($this->isOwnContent($comment->getUser())) {
+            return $this->json(['error' => 'You are not allowed to dislike your own comment'], Response::HTTP_FORBIDDEN);
         }
 
-        $dislike = $this->dislikeRepository->create($this->getUser(), null, $comment);
+        $dislike = $this->dislikeRepository->create($currentUser, null, $comment);
 
         $data = $this->jsonConverter->encodeToJson($dislike);
-        return new JsonResponse($data, 201, [], true);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/dislikes/id/{id}', methods: ['DELETE'])]
@@ -202,15 +193,6 @@ class DislikeController extends AbstractController {
                 description: 'Dislike supprimé avec succès',
                 content: new OA\JsonContent(
                     properties: []
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameter 'id' required")
-                    ]
                 )
             ),
             new OA\Response(
@@ -242,19 +224,17 @@ class DislikeController extends AbstractController {
             )
         ]
     )]
-    public function delete(int $id): JsonResponse {
-        $dislike = $this->dislikeRepository->find($id);
-        if (!$dislike) {
-            return new JsonResponse(['error' => 'Dislike not found'], 404);
+    public function delete(int $id): JsonResponse
+    {
+        if (!($dislike = $this->dislikeRepository->find($id))) {
+            return $this->json(['error' => 'Dislike not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $currentUser = $this->getUser();
-        if ($currentUser->getUserIdentifier() !== $dislike->getUser()->getUserIdentifier()) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this dislike'], 403);
+        if (!$this->isOwnContent($dislike->getUser())) {
+            return $this->json(['error' => 'You are not allowed to delete this dislike'], Response::HTTP_FORBIDDEN);
         }
 
         $this->dislikeRepository->delete($dislike);
-        return new JsonResponse([], 200);
+        return $this->json([], Response::HTTP_OK);
     }
-
 }

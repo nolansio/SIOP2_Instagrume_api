@@ -15,18 +15,92 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Publication>
  */
-class PublicationRepository extends ServiceEntityRepository {
+class PublicationRepository extends ServiceEntityRepository
+{
 
-    private ManagerRegistry $doctrine;
-    private ParameterBagInterface $params;
-
-    public function __construct(ManagerRegistry $doctrine, ParameterBagInterface $params) {
+    public function __construct(
+        private readonly ManagerRegistry $doctrine,
+        private readonly ParameterBagInterface $params
+    ) {
         parent::__construct($doctrine, Publication::class);
-        $this->doctrine = $doctrine;
-        $this->params = $params;
     }
 
-    public function create(?User $user, string $description, array $imagePaths): Publication {
+    /**
+     * Trouve toutes les publications avec leurs relations (optimisé pour éviter N+1)
+     */
+    public function findAllOptimized(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.user', 'u')->addSelect('u')
+            ->leftJoin('p.images', 'i')->addSelect('i')
+            ->leftJoin('p.likes', 'l')->addSelect('l')
+            ->leftJoin('p.dislikes', 'd')->addSelect('d')
+            ->leftJoin('p.comments', 'c')->addSelect('c')
+            ->orderBy('p.created_at', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Pagination optimisée des publications
+     * 
+     * @param int $page Numéro de page (commence à 1)
+     * @param int $limit Nombre d'éléments par page
+     * @return array ['data' => Publication[], 'total' => int, 'pages' => int, 'current_page' => int, 'per_page' => int]
+     */
+    public function findPaginated(int $page = 1, int $limit = 20): array
+    {
+        $offset = ($page - 1) * $limit;
+
+        // Requête pour les données avec toutes les relations chargées
+        $query = $this->createQueryBuilder('p')
+            ->leftJoin('p.user', 'u')->addSelect('u')
+            ->leftJoin('p.images', 'i')->addSelect('i')
+            ->leftJoin('p.likes', 'l')->addSelect('l')
+            ->leftJoin('p.dislikes', 'd')->addSelect('d')
+            ->leftJoin('p.comments', 'c')->addSelect('c')
+            ->orderBy('p.created_at', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery();
+
+        $publications = $query->getResult();
+
+        // Requête pour le total (sans les relations pour être plus rapide)
+        $total = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return [
+            'data' => $publications,
+            'total' => (int)$total,
+            'pages' => ceil($total / $limit),
+            'current_page' => $page,
+            'per_page' => $limit
+        ];
+    }
+
+    /**
+     * Trouve une publication par ID avec toutes ses relations chargées
+     */
+    public function findOneByIdOptimized(int $id): ?Publication
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.user', 'u')->addSelect('u')
+            ->leftJoin('p.images', 'i')->addSelect('i')
+            ->leftJoin('p.likes', 'l')->addSelect('l')
+            ->leftJoin('p.dislikes', 'd')->addSelect('d')
+            ->leftJoin('p.comments', 'c')->addSelect('c')
+            ->leftJoin('c.user', 'cu')->addSelect('cu')
+            ->where('p.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function create(?User $user, string $description, array $imagePaths): Publication
+    {
         $publication = new Publication();
 
         $publication->setUser($user);
@@ -48,7 +122,8 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
-    public function delete(Publication $publication): void {
+    public function delete(Publication $publication): void
+    {
         $filesystem = new Filesystem();
         $images = $publication->getImages();
 
@@ -64,7 +139,8 @@ class PublicationRepository extends ServiceEntityRepository {
         $entityManager->flush();
     }
 
-    public function update(Publication $publication, string $description): Publication {
+    public function update(Publication $publication, string $description): Publication
+    {
         $entityManager = $this->doctrine->getManager();
         $publication->setDescription($description);
         $entityManager->flush();
@@ -72,7 +148,8 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
-    public function lock(Publication $publication): Publication {
+    public function lock(Publication $publication): Publication
+    {
         $entityManager = $this->doctrine->getManager();
         $publication->setLocked(true);
         $entityManager->flush();
@@ -80,12 +157,12 @@ class PublicationRepository extends ServiceEntityRepository {
         return $publication;
     }
 
-    public function delock(Publication $publication): Publication {
+    public function delock(Publication $publication): Publication
+    {
         $entityManager = $this->doctrine->getManager();
         $publication->setLocked(false);
         $entityManager->flush();
 
         return $publication;
     }
-
 }

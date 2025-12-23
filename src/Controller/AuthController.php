@@ -6,20 +6,19 @@ use App\Repository\UserRepository;
 use App\Service\JWTService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use OpenApi\Attributes as OA;
 use function Symfony\Component\Clock\now;
 
-class AuthController extends AbstractController {
+class AuthController extends AbstractController
+{
 
-    private JWTService $jwtService;
-    private UserRepository $userRepository;
-
-    public function __construct(JWTService $jwtService, UserRepository $userRepository) {
-        $this->jwtService = $jwtService;
-        $this->userRepository = $userRepository;
-    }
+    public function __construct(
+        private readonly JWTService $jwtService,
+        private readonly UserRepository $userRepository
+    ) {}
 
     #[Route('/api/token', methods: ['POST'])]
     #[OA\Post(
@@ -61,7 +60,7 @@ class AuthController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Incorrect password")
+                        new OA\Property(property: 'error', type: 'string', example: "Invalid credentials")
                     ]
                 )
             ),
@@ -70,47 +69,27 @@ class AuthController extends AbstractController {
                 description: 'Non autorisé',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'User is banned. Votre compte est banni jusqu\'au 25/12/2024 à 15:30'),
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 404,
-                description: 'Introuvable',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: 'User not found')
+                        new OA\Property(property: 'error', type: 'string', example: 'User is banned'),
                     ]
                 )
             )
         ]
     )]
-    public function token(Request $request): JsonResponse {
+    public function token(Request $request): JsonResponse
+    {
         $data = json_decode($request->getContent(), true);
 
-        $username = $data['username'] ?? null;
-        $password = $data['password'] ?? null;
-
-        if (!$username || !$password) {
-            return new JsonResponse(['error' => "Parameters 'username' and 'password' required"], 400);
+        if (!($username = $data['username'] ?? null) || !($password = $data['password'] ?? null)) {
+            return $this->json(['error' => "Parameters 'username' and 'password' required"], Response::HTTP_BAD_REQUEST);
         }
 
         $user = $this->userRepository->findOneByUsername($username);
-        if (!$user) {
-            return new JsonResponse(['error' => "User not found"], 404);
+        if (!$user || !$this->userRepository->isLoggable($user, $password)) {
+            return $this->json(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
         }
 
-        if (!$this->userRepository->isLoggable($user, $password)) {
-            return new JsonResponse(['error' => "Incorrect password"], 401);
-        }
-
-        if ($user->getBannedUntil() > now()) {
-            $bannedUntil = $user->getBannedUntil()->format('d/m/Y à H:i');
-            return new JsonResponse([
-                'error' => 'User is banned',
-                'banned_until' => $bannedUntil,
-                'message' => "Votre compte est banni jusqu'au {$bannedUntil}"
-            ], 403);
+        if ($bannedResponse = $this->checkUserBan($user)) {
+            return $bannedResponse;
         }
 
         $token = $this->jwtService->encodeToken([
@@ -118,7 +97,19 @@ class AuthController extends AbstractController {
             'roles' => $user->getRoles()
         ]);
 
-        return new JsonResponse(['token' => $token], 200);
+        return $this->json(['token' => $token]);
     }
 
+    private function checkUserBan($user): ?JsonResponse
+    {
+        if ($user->getBannedUntil() && $user->getBannedUntil() > now()) {
+            $bannedUntil = $user->getBannedUntil()->format('d/m/Y à H:i');
+            return $this->json([
+                'error' => 'User is banned',
+                'banned_until' => $bannedUntil,
+                'message' => "Votre compte est banni jusqu'au {$bannedUntil}"
+            ], Response::HTTP_FORBIDDEN);
+        }
+        return null;
+    }
 }
