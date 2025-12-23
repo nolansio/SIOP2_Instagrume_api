@@ -2,33 +2,51 @@
 
 namespace App\Controller;
 
+use App\Entity\Publication;
 use App\Repository\PublicationRepository;
 use App\Repository\UserRepository;
 use App\Service\JsonConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use OpenApi\Attributes as OA;
 
-class PublicationController extends AbstractController {
+class PublicationController extends AbstractController
+{
 
-    private PublicationRepository $publicationRepository;
-    private JsonConverter $jsonConverter;
-    private UserRepository $userRepository;
-
-    public function __construct(PublicationRepository $publicationRepository, JsonConverter $jsonConverter, UserRepository $userRepository) {
-        $this->publicationRepository = $publicationRepository;
-        $this->jsonConverter = $jsonConverter;
-        $this->userRepository = $userRepository;
-    }
+    public function __construct(
+        private readonly PublicationRepository $publicationRepository,
+        private readonly JsonConverter $jsonConverter,
+        private readonly UserRepository $userRepository,
+        private readonly TagAwareCacheInterface $cachePublications
+    ) {}
 
     #[Route('/api/publications', methods: ['GET'])]
     #[OA\Get(
         path: '/api/publications',
         summary: "Récupérer toutes les publications",
-        description: "Récupération de toutes les publications",
+        description: "Récupération de toutes les publications avec pagination",
         tags: ['Publication'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Numéro de page',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 1, example: 1)
+            ),
+            new OA\Parameter(
+                name: 'limit',
+                in: 'query',
+                description: 'Nombre d\'éléments par page (max 100)',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 20, example: 20)
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -58,11 +76,27 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function getAll(): JsonResponse {
-        $publications = $this->publicationRepository->findAll();
+    public function getAll(Request $request): JsonResponse
+    {
+        $page = max(1, (int)$request->query->get('page', 1));
+        $limit = min(100, max(1, (int)$request->query->get('limit', 20)));
 
-        $data = $this->jsonConverter->encodeToJson($publications, ['publication']);
-        return new JsonResponse($data, 200, [], true);
+        $cacheKey = "publications_page_{$page}_limit_{$limit}";
+
+        $result = $this->cachePublications->get($cacheKey, function (ItemInterface $item) use ($page, $limit) {
+            $item->expiresAfter(300);
+            $item->tag(['publications']);
+            return $this->publicationRepository->findPaginated($page, $limit);
+        });
+
+        $data = $this->jsonConverter->encodeToJson($result['data'], ['publication']);
+
+        return new JsonResponse($data, Response::HTTP_OK, [
+            'X-Total-Count' => $result['total'],
+            'X-Total-Pages' => $result['pages'],
+            'X-Current-Page' => $result['current_page'],
+            'X-Per-Page' => $result['per_page']
+        ], true);
     }
 
     #[Route('/api/publications/id/{id}', methods: ['GET'])]
@@ -109,15 +143,14 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function get(int $id): JsonResponse {
-        $publication = $this->publicationRepository->find($id);
-
-        if (!$publication) {
-            return new JsonResponse(['error' => 'Publication not found'], 404);
+    public function get(int $id): JsonResponse
+    {
+        if (!($publication = $this->publicationRepository->findOneByIdOptimized($id))) {
+            return $this->json(['error' => 'Publication not found'], Response::HTTP_NOT_FOUND);
         }
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
-        return new JsonResponse($data, 200, [], true);
+        return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/publications', methods: ['POST'])]
@@ -165,7 +198,7 @@ class PublicationController extends AbstractController {
                 description: 'Mauvaise requête',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'username' and 'password' required")
+                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'description' and 'images' required")
                     ]
                 )
             ),
@@ -180,34 +213,38 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function insert(Request $request): JsonResponse {
+    public function insert(Request $request): JsonResponse
+    {
         $description = $request->request->get('description');
         $images = $request->files->get('images', []);
 
-        if (!$images) {
-            $images = [];
-        } elseif (!is_array($images)) {
-            $images = [$images];
-        }
+        $images = match (true) {
+            empty($images) => [],
+            is_array($images) => $images,
+            default => [$images]
+        };
 
         if (!$description && empty($images)) {
-            return new JsonResponse(['error' => "Parameters 'description' and 'images' required"], 400);
+            return $this->json(['error' => "Parameters 'description' and 'images' required"], Response::HTTP_BAD_REQUEST);
         }
 
-        $ImagesDirectory = $this->getParameter('kernel.project_dir').'/public/images';
         $imagePaths = [];
+        if (!empty($images)) {
+            $imagesDirectory = $this->getParameter('kernel.project_dir') . '/public/images';
 
-        foreach ($images as $file) {
-            $name = uniqid().'.png';
-            $file->move($ImagesDirectory, $name);
-
-            $imagePaths[] = '/images/'.$name;
+            foreach ($images as $file) {
+                $filename = uniqid() . '.png';
+                $file->move($imagesDirectory, $filename);
+                $imagePaths[] = '/images/' . $filename;
+            }
         }
 
         $publication = $this->publicationRepository->create($this->getUser(), $description, $imagePaths);
-        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
 
-        return new JsonResponse($data, 201, [], true);
+        $this->cachePublications->invalidateTags(['publications']);
+
+        $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
+        return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/publications', methods: ['PUT'])]
@@ -228,7 +265,7 @@ class PublicationController extends AbstractController {
         ),
         responses: [
             new OA\Response(
-                response: 201,
+                response: 200,
                 description: 'Publication modifiée avec succès',
                 content: new OA\JsonContent(
                     properties: [
@@ -273,32 +310,28 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function update(Request $request): JsonResponse {
+    public function update(Request $request): JsonResponse
+    {
         $data = json_decode($request->getContent(), true);
-        $id = $data['id'] ?? null;
-        $description = $data['description'] ?? null;
 
-        if (!$id || !$description) {
-            return new JsonResponse(['error' => "Parameters 'id' and 'description' required"], 400);
+        if (!($id = $data['id'] ?? null) || !($description = $data['description'] ?? null)) {
+            return $this->json(['error' => "Parameters 'id' and 'description' required"], Response::HTTP_BAD_REQUEST);
         }
 
-        $publication = $this->publicationRepository->find($id);
-        if (!$publication) {
-            return new JsonResponse(['error' =>'Publication not found'], 404);
+        if (!($publication = $this->publicationRepository->find($id))) {
+            return $this->json(['error' => 'Publication not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $currentUser = $this->getUser();
-        $isPublicationUser = $currentUser->getUserIdentifier() === $publication->getUser()->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles()) || in_array('ROLE_ADMIN', $currentUser->getRoles());
-
-        if (!$isPublicationUser && !$isMod) {
-            return new JsonResponse(['error' => 'You are not allowed to update this publication'], 403);
+        if (!$this->canModifyPublication($publication)) {
+            return $this->json(['error' => 'You are not allowed to update this publication'], Response::HTTP_FORBIDDEN);
         }
 
         $publication = $this->publicationRepository->update($publication, $description);
 
+        $this->cachePublications->invalidateTags(['publications']);
+
         $data = $this->jsonConverter->encodeToJson($publication, ['user']);
-        return new JsonResponse($data, 200, [], true);
+        return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/publications/id/{id}', methods: ['DELETE'])]
@@ -310,18 +343,9 @@ class PublicationController extends AbstractController {
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Publication supprimé avec succès',
+                description: 'Publication supprimée avec succès',
                 content: new OA\JsonContent(
                     properties: []
-                )
-            ),
-            new OA\Response(
-                response: 400,
-                description: 'Mauvaise requête',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'error', type: 'string', example: "Parameters 'id' required")
-                    ]
                 )
             ),
             new OA\Response(
@@ -353,34 +377,50 @@ class PublicationController extends AbstractController {
             )
         ]
     )]
-    public function delete(int $id): JsonResponse {
-        if (!$id) {
-            return new JsonResponse(['error' => "Parameters 'id' required"], 400);
+    public function delete(int $id): JsonResponse
+    {
+        if (!($publication = $this->publicationRepository->find($id))) {
+            return $this->json(['error' => "Publication not found"], Response::HTTP_NOT_FOUND);
         }
 
-        $publication = $this->publicationRepository->find($id);
-        if (!$publication) {
-            return new JsonResponse(['error' => "Publication not found"], 404);
-        }
-
-        $user = $this->userRepository->find($publication->getUser());
-        $currentUser = $this->getUser();
-        $isCurrentUser = $currentUser->getUserIdentifier() == $user->getUserIdentifier();
-        $isMod = in_array('ROLE_MOD', $currentUser->getRoles());
-        $isAdmin = in_array('ROLE_ADMIN', $currentUser->getRoles());
-        $userIsAdmin = in_array('ROLE_ADMIN', $user->getRoles());
-        $userIsMod = in_array('ROLE_MOD', $user->getRoles());
-
-        // AS = Auteur suppression | AP = Auteur publication
-        // Si :
-        // AS n’est ni modérateur ni administrateur ET elle n’est pas l’AC
-        // AS est modérateur ET l’AC est modérateur ou administrateur ET ce n’est pas son propre publication
-        if (( !($isMod || $isAdmin) && !$isCurrentUser) || ($isMod && ($userIsMod || $userIsAdmin) && !$isCurrentUser)) {
-            return new JsonResponse(['error' => 'You are not allowed to delete this publication'], 403);
+        if (!$this->canModifyPublication($publication)) {
+            return $this->json(['error' => 'You are not allowed to delete this publication'], Response::HTTP_FORBIDDEN);
         }
 
         $this->publicationRepository->delete($publication);
-        return new JsonResponse([], 200);
+
+        $this->cachePublications->invalidateTags(['publications']);
+
+        return $this->json([], Response::HTTP_OK);
     }
 
+    private function canModifyPublication(Publication $publication): bool
+    {
+        $currentUser = $this->getUser();
+        $publicationAuthor = $publication->getUser();
+
+        $isAuthor = $currentUser->getUserIdentifier() === $publicationAuthor->getUserIdentifier();
+
+        $currentUserRoles = $currentUser->getRoles();
+        $authorRoles = $publicationAuthor->getRoles();
+
+        $isMod = in_array('ROLE_MOD', $currentUserRoles);
+        $isAdmin = in_array('ROLE_ADMIN', $currentUserRoles);
+        $authorIsMod = in_array('ROLE_MOD', $authorRoles);
+        $authorIsAdmin = in_array('ROLE_ADMIN', $authorRoles);
+
+        if ($isAuthor) {
+            return true;
+        }
+
+        if ($isAdmin) {
+            return true;
+        }
+
+        if ($isMod && !$authorIsMod && !$authorIsAdmin) {
+            return true;
+        }
+
+        return false;
+    }
 }
