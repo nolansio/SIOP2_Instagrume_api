@@ -12,17 +12,19 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use OpenApi\Attributes as OA;
 
 class ModerationController extends AbstractController
 {
-
     use ModerationTrait;
 
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly PublicationRepository $publicationRepository,
-        private readonly JsonConverter $jsonConverter
+        private readonly JsonConverter $jsonConverter,
+        private readonly TagAwareCacheInterface $cacheUsers,
+        private readonly TagAwareCacheInterface $cachePublications
     ) {}
 
     #[Route('/api/moderation/ban', methods: ['POST'])]
@@ -116,6 +118,9 @@ class ModerationController extends AbstractController
 
         $bannedUntil = (new DateTime())->modify("+{$duration} days");
         $user = $this->userRepository->updateBannedUntil($user, $bannedUntil);
+
+        // Invalider le cache
+        $this->cacheUsers->invalidateTags(['users']);
 
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
         return new JsonResponse($data, Response::HTTP_OK, [], true);
@@ -212,6 +217,9 @@ class ModerationController extends AbstractController
         $unbannedDate = new DateTime('1970-01-01 00:00:00');
         $user = $this->userRepository->updateBannedUntil($user, $unbannedDate);
 
+        // Invalider le cache
+        $this->cacheUsers->invalidateTags(['users']);
+
         $data = $this->jsonConverter->encodeToJson($user, ['user']);
         return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
@@ -281,6 +289,9 @@ class ModerationController extends AbstractController
 
         $publication = $this->publicationRepository->lock($publication);
 
+        // Invalider le cache
+        $this->cachePublications->invalidateTags(['publications']);
+
         $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
         return new JsonResponse($data, Response::HTTP_OK, [], true);
     }
@@ -349,6 +360,9 @@ class ModerationController extends AbstractController
         }
 
         $publication = $this->publicationRepository->delock($publication);
+
+        // Invalider le cache
+        $this->cachePublications->invalidateTags(['publications']);
 
         $data = $this->jsonConverter->encodeToJson($publication, ['publication']);
         return new JsonResponse($data, Response::HTTP_OK, [], true);
