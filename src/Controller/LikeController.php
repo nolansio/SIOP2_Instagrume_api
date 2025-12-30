@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\LikeRepository;
+use App\Repository\DislikeRepository;
 use App\Repository\PublicationRepository;
 use App\Repository\CommentRepository;
 use App\Service\JsonConverter;
@@ -15,12 +16,12 @@ use OpenApi\Attributes as OA;
 
 class LikeController extends AbstractController
 {
-
     use OwnershipCheckTrait;
 
     public function __construct(
         private readonly JsonConverter $jsonConverter,
         private readonly LikeRepository $likeRepository,
+        private readonly DislikeRepository $dislikeRepository,
         private readonly PublicationRepository $publicationRepository,
         private readonly CommentRepository $commentRepository
     ) {}
@@ -95,6 +96,12 @@ class LikeController extends AbstractController
 
         if ($this->isOwnContent($publication->getUser())) {
             return $this->json(['error' => 'You are not allowed to like your own publication'], Response::HTTP_FORBIDDEN);
+        }
+
+        // Supprimer le dislike s'il existe
+        $existingDislike = $this->dislikeRepository->findDislikeByUserAndPublication($currentUser, $publication);
+        if ($existingDislike) {
+            $this->dislikeRepository->delete($existingDislike);
         }
 
         $like = $this->likeRepository->create($currentUser, $publication, null);
@@ -173,6 +180,12 @@ class LikeController extends AbstractController
 
         if ($this->isOwnContent($comment->getUser())) {
             return $this->json(['error' => 'You are not allowed to like your own comment'], Response::HTTP_FORBIDDEN);
+        }
+
+        // Supprimer le dislike s'il existe
+        $existingDislike = $this->dislikeRepository->findDislikeByUserAndComment($currentUser, $comment);
+        if ($existingDislike) {
+            $this->dislikeRepository->delete($existingDislike);
         }
 
         $like = $this->likeRepository->create($currentUser, null, $comment);

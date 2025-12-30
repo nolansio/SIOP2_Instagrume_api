@@ -303,6 +303,50 @@ class UserController extends AbstractController
         return new JsonResponse($data, Response::HTTP_CREATED, [], true);
     }
 
+    #[Route('/api/users/myself', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/users/myself',
+        summary: "Récupérer l'utilisateur connecté",
+        description: "Récupération des informations de l'utilisateur actuellement connecté",
+        tags: ['Utilisateur'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Utilisateur récupéré avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'username', type: 'string', example: 'admin'),
+                        new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string'), example: ['ROLE_ADMIN']),
+                        new OA\Property(property: 'publications', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'object'), example: []),
+                        new OA\Property(property: 'banned_until', type: 'string', example: '1970-01-01 00:00:00')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Non autorisé',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string', example: 'Invalid token')
+                    ]
+                )
+            )
+        ]
+    )]
+    public function getMyself(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = $this->jsonConverter->encodeToJson($user, ['user']);
+        return new JsonResponse($data, Response::HTTP_OK, [], true);
+    }
+
     #[Route('/api/users', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/users',
