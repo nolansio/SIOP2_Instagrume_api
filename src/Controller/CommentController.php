@@ -235,7 +235,7 @@ class CommentController extends AbstractController
             }
         }
 
-        if ($publication->isLocked() || ($original_comment && $original_comment->getPublication()->isLocked())) {
+        if ($publication->isLocked()) {
             return $this->json(['error' => "Publication is locked"], Response::HTTP_LOCKED);
         }
 
