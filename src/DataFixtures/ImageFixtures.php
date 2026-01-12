@@ -62,28 +62,28 @@ class ImageFixtures extends Fixture implements DependentFixtureInterface {
         // Publication 3
         $image9 = new Image();
         $image9->setDescription("Smoothie");
-        $image9->setUrl("/images/upload9.png");
+        $image9->setUrl("/images/upload9.jpg");
         $image9->setPublication($this->getReference('publication4', Publication::class));
         $manager->persist($image9);
 
         // Publication 4
         $image10 = new Image();
         $image10->setDescription("Jardinnage");
-        $image10->setUrl("/images/upload10.png");
+        $image10->setUrl("/images/upload10.jpg");
         $image10->setPublication($this->getReference('publication5', Publication::class));
         $manager->persist($image10);
 
         // Publication 5
         $image11 = new Image();
         $image11->setDescription("Grosse citrouille");
-        $image11->setUrl("/images/upload11.png");
+        $image11->setUrl("/images/upload11.jpg");
         $image11->setPublication($this->getReference('publication6', Publication::class));
         $manager->persist($image11);
 
         // Publication 6
         $image12 = new Image();
         $image12->setDescription("Guiche au légumes");
-        $image12->setUrl("/images/upload12.png");
+        $image12->setUrl("/images/upload12.jpg");
         $image12->setPublication($this->getReference('publication7', Publication::class));
         $manager->persist($image12);
 

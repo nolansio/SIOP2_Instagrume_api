@@ -53,22 +53,40 @@ class PublicationRepository extends ServiceEntityRepository
     {
         $offset = ($page - 1) * $limit;
 
-        // Requête pour les données avec toutes les relations chargées
-        $query = $this->createQueryBuilder('p')
+        // SOLUTION 1 : Récupérer d'abord les IDs, puis charger les publications
+        $ids = $this->createQueryBuilder('p')
+            ->select('p.id')
+            ->orderBy('p.created_at', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        if (empty($ids)) {
+            return [
+                'data' => [],
+                'total' => 0,
+                'pages' => 0,
+                'current_page' => $page,
+                'per_page' => $limit
+            ];
+        }
+
+        // Puis charger les publications complètes avec toutes les relations
+        $publications = $this->createQueryBuilder('p')
             ->leftJoin('p.user', 'u')->addSelect('u')
             ->leftJoin('u.images', 'ui')->addSelect('ui')
             ->leftJoin('p.images', 'i')->addSelect('i')
             ->leftJoin('p.likes', 'l')->addSelect('l')
             ->leftJoin('p.dislikes', 'd')->addSelect('d')
             ->leftJoin('p.comments', 'c')->addSelect('c')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $ids)
             ->orderBy('p.created_at', 'DESC')
-            ->setFirstResult($offset)
-            ->setMaxResults($limit)
-            ->getQuery();
+            ->getQuery()
+            ->getResult();
 
-        $publications = $query->getResult();
-
-        // Requête pour le total (sans les relations pour être plus rapide)
+        // Requête pour le total
         $total = $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->getQuery()
