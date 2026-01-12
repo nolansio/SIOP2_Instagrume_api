@@ -32,6 +32,7 @@ class PublicationRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->leftJoin('p.user', 'u')->addSelect('u')
+            ->leftJoin('u.images', 'ui')->addSelect('ui')
             ->leftJoin('p.images', 'i')->addSelect('i')
             ->leftJoin('p.likes', 'l')->addSelect('l')
             ->leftJoin('p.dislikes', 'd')->addSelect('d')
@@ -55,6 +56,7 @@ class PublicationRepository extends ServiceEntityRepository
         // Requête pour les données avec toutes les relations chargées
         $query = $this->createQueryBuilder('p')
             ->leftJoin('p.user', 'u')->addSelect('u')
+            ->leftJoin('u.images', 'ui')->addSelect('ui')
             ->leftJoin('p.images', 'i')->addSelect('i')
             ->leftJoin('p.likes', 'l')->addSelect('l')
             ->leftJoin('p.dislikes', 'd')->addSelect('d')
